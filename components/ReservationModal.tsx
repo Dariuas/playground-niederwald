@@ -152,7 +152,7 @@ export default function ReservationModal({ pavilion, onClose }: ReservationModal
                   type="submit"
                   className="w-full bg-teal-700 hover:bg-teal-600 text-white font-black py-3 rounded-xl transition-colors uppercase tracking-wider"
                 >
-                  Reserve {pavilion.name.split("—")[0].trim()}
+                  Reserve {pavilion.name}
                 </button>
               </form>
             </>

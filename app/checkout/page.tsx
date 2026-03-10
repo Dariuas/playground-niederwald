@@ -1,20 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import Script from "next/script";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
+// ── Square config — set in .env.local ──────────────────────────────
+const SQUARE_APP_ID = process.env.NEXT_PUBLIC_SQUARE_APP_ID ?? "";
+const SQUARE_LOCATION_ID = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? "";
+const SQUARE_ENV = process.env.NEXT_PUBLIC_SQUARE_ENV ?? "sandbox";
+const SQUARE_SCRIPT =
+  SQUARE_ENV === "production"
+    ? "https://web.squarecdn.com/v1/square.js"
+    : "https://sandbox.web.squarecdn.com/v1/square.js";
+
 type Step = "cart" | "info" | "payment" | "confirmation";
 interface ContactInfo { name: string; email: string; phone: string; }
-interface PaymentInfo { cardName: string; cardNumber: string; expiry: string; cvv: string; }
-
 const EMPTY_CONTACT: ContactInfo = { name: "", email: "", phone: "" };
-const EMPTY_PAYMENT: PaymentInfo = { cardName: "", cardNumber: "", expiry: "", cvv: "" };
 
-function formatCard(val: string) { return val.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim(); }
-function formatExpiry(val: string) { const d = val.replace(/\D/g, "").slice(0, 4); return d.length >= 3 ? d.slice(0, 2) + "/" + d.slice(2) : d; }
-
-function inputCls() { return "w-full bg-white border-2 border-amber-100 rounded-xl px-4 py-2.5 text-sm text-stone-800 placeholder-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-400"; }
+function inputCls() {
+  return "w-full bg-white border-2 border-amber-100 rounded-xl px-4 py-2.5 text-sm text-stone-800 placeholder-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-400";
+}
 
 function StepIndicator({ current }: { current: Step }) {
   const steps: { id: Step; label: string }[] = [
@@ -39,22 +45,185 @@ function StepIndicator({ current }: { current: Step }) {
   );
 }
 
+// ── Square payment step ────────────────────────────────────────────
+function SquarePaymentForm({
+  grandTotal,
+  onSuccess,
+  onBack,
+  items,
+  totalPrice,
+  tax,
+}: {
+  grandTotal: number;
+  onSuccess: () => void;
+  onBack: () => void;
+  items: { name: string; quantity: number; price: number }[];
+  totalPrice: number;
+  tax: number;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const cardInstance = useRef<unknown>(null);
+  const [sdkReady, setSdkReady] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  // Initialize Square card once SDK is ready
+  useEffect(() => {
+    if (!sdkReady || initialized || !cardRef.current) return;
+
+    async function initSquare() {
+      try {
+        // @ts-expect-error Square is loaded via CDN script
+        const payments = window.Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
+        const card = await payments.card({
+          style: {
+            input: {
+              color: "#1c1917",
+              fontFamily: "inherit",
+              fontSize: "14px",
+            },
+            "input::placeholder": { color: "#d6d3d1" },
+            ".input-container": {
+              borderColor: "#fde68a",
+              borderRadius: "12px",
+              borderWidth: "2px",
+            },
+            ".input-container.is-focus": { borderColor: "#0d9488" },
+            ".input-container.is-error": { borderColor: "#f87171" },
+          },
+        });
+        await card.attach(cardRef.current);
+        cardInstance.current = card;
+        setInitialized(true);
+      } catch (err) {
+        console.error("Square init error:", err);
+        setError("Could not load payment form. Please refresh and try again.");
+      }
+    }
+
+    initSquare();
+  }, [sdkReady, initialized]);
+
+  async function handlePay(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cardInstance.current) return;
+    setError(null);
+    setProcessing(true);
+
+    try {
+      // @ts-expect-error Square card tokenize
+      const result = await cardInstance.current.tokenize();
+
+      if (result.status === "OK") {
+        // ── Phase 2: send result.token to your server endpoint ──
+        // Example:
+        //   await fetch("/api/payment", {
+        //     method: "POST",
+        //     body: JSON.stringify({ token: result.token, amount: Math.round(grandTotal * 100) }),
+        //   });
+        console.log("Square token:", result.token, "| Amount:", Math.round(grandTotal * 100), "cents");
+
+        // Simulate a brief network call, then confirm
+        await new Promise((r) => setTimeout(r, 1200));
+        onSuccess();
+      } else {
+        const msgs = result.errors?.map((e: { message: string }) => e.message).join(", ") ?? "Payment failed.";
+        setError(msgs);
+        setProcessing(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Please try again.");
+      setProcessing(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handlePay}>
+      {/* Load Square SDK */}
+      <Script
+        src={SQUARE_SCRIPT}
+        strategy="afterInteractive"
+        onReady={() => setSdkReady(true)}
+        onError={() => setError("Could not load Square SDK. Check your connection.")}
+      />
+
+      <div className="bg-white border-2 border-amber-100 rounded-2xl p-6 mb-4">
+        {/* Square badge */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-teal-600 text-lg">🔒</span>
+            <span className="text-xs font-bold text-stone-400">Secured by Square</span>
+          </div>
+          <div className="flex gap-1.5 items-center">
+            {["VISA", "MC", "AMEX", "DISC"].map((c) => (
+              <span key={c} className="text-xs bg-amber-50 border border-amber-100 text-stone-500 px-1.5 py-0.5 rounded font-bold">{c}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Square card container — SDK renders fields here */}
+        <div className="min-h-[100px]">
+          {!initialized && !error && (
+            <div className="flex items-center gap-2 text-stone-400 text-sm py-8 justify-center">
+              <span className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+              Loading secure payment form…
+            </div>
+          )}
+          <div ref={cardRef} id="card-container" className={initialized ? "" : "hidden"} />
+        </div>
+
+        {error && (
+          <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-sm text-red-600 font-semibold">
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* Order summary */}
+      <div className="bg-white border-2 border-amber-100 rounded-2xl p-4 mb-5">
+        {items.map((i) => (
+          <div key={i.name} className="flex justify-between text-sm text-stone-400 py-0.5">
+            <span>{i.name} × {i.quantity}</span>
+            <span>${(i.price * i.quantity).toFixed(2)}</span>
+          </div>
+        ))}
+        <div className="flex justify-between text-sm text-stone-400 border-t border-amber-50 pt-2 mt-1">
+          <span>Tax (8%)</span><span>${tax.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-stone-800 font-black text-xl border-t border-amber-100 pt-3 mt-2">
+          <span>Total</span><span className="text-teal-700">${grandTotal.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        disabled={processing || !initialized}
+        className="w-full bg-teal-700 hover:bg-teal-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl uppercase tracking-widest text-sm transition-colors flex items-center justify-center gap-3"
+      >
+        {processing ? (
+          <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Processing…</>
+        ) : (
+          <>🔒 Pay ${grandTotal.toFixed(2)} with Square</>
+        )}
+      </button>
+      <button type="button" onClick={onBack} className="block w-full text-center text-stone-400 hover:text-teal-600 text-xs mt-4 font-bold uppercase tracking-wider transition-colors">
+        ← Back
+      </button>
+    </form>
+  );
+}
+
+// ── Main checkout page ─────────────────────────────────────────────
 export default function CheckoutPage() {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCart();
   const [step, setStep] = useState<Step>("cart");
   const [contact, setContact] = useState<ContactInfo>(EMPTY_CONTACT);
-  const [payment, setPayment] = useState<PaymentInfo>(EMPTY_PAYMENT);
-  const [processing, setProcessing] = useState(false);
   const [orderNumber] = useState(() => "PN-" + Math.floor(100000 + Math.random() * 900000));
 
   const tax = totalPrice * 0.08;
   const grandTotal = totalPrice + tax;
-
-  function handlePayNow(e: React.FormEvent) {
-    e.preventDefault();
-    setProcessing(true);
-    setTimeout(() => { setProcessing(false); clearCart(); setStep("confirmation"); }, 2000);
-  }
 
   return (
     <div className="bg-amber-50 min-h-screen">
@@ -63,15 +232,17 @@ export default function CheckoutPage() {
           {step === "confirmation" ? "🎉 You're all set!" : "Checkout"}
         </p>
         <h1 className="text-3xl font-black text-white">
-          {step === "cart" && "Your Cart"}{step === "info" && "Your Info"}
-          {step === "payment" && "Payment"}{step === "confirmation" && "Order Confirmed!"}
+          {step === "cart" && "Your Cart"}
+          {step === "info" && "Your Info"}
+          {step === "payment" && "Payment"}
+          {step === "confirmation" && "Order Confirmed!"}
         </h1>
       </div>
 
       <div className="max-w-xl mx-auto px-4 py-10">
         <StepIndicator current={step} />
 
-        {/* Cart */}
+        {/* ── Cart ── */}
         {step === "cart" && (
           <div>
             {items.length === 0 ? (
@@ -79,13 +250,15 @@ export default function CheckoutPage() {
                 <div className="text-6xl mb-4">🛒</div>
                 <p className="text-stone-800 font-black text-xl mb-2">Your cart is empty</p>
                 <p className="text-stone-400 text-sm mb-8">Head back and add some items first!</p>
-                <Link href="/menu" className="inline-block bg-teal-700 hover:bg-teal-600 text-white font-black py-2.5 px-8 rounded-xl uppercase tracking-widest text-sm transition-colors">Browse Menu</Link>
+                <Link href="/menu" className="inline-block bg-teal-700 hover:bg-teal-600 text-white font-black py-2.5 px-8 rounded-xl uppercase tracking-widest text-sm transition-colors">
+                  Browse Menu
+                </Link>
               </div>
             ) : (
               <>
                 <div className="space-y-3 mb-6">
                   {items.map((item) => (
-                    <div key={item.id} className="bg-white border-2 border-amber-100 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+                    <div key={item.id} className="bg-white border-2 border-amber-100 rounded-2xl px-5 py-4 flex items-center gap-4">
                       <div className="flex-1 min-w-0">
                         <p className="text-stone-800 font-black text-sm truncate">{item.name}</p>
                         <p className="text-stone-400 text-xs">{item.category}</p>
@@ -96,7 +269,7 @@ export default function CheckoutPage() {
                         <button onClick={() => updateQty(item.id, item.quantity + 1)} className="w-7 h-7 rounded-lg bg-amber-50 border-2 border-amber-100 text-stone-700 font-black text-sm flex items-center justify-center hover:border-teal-300">+</button>
                       </div>
                       <p className="text-teal-700 font-black text-sm w-16 text-right">${(item.price * item.quantity).toFixed(2)}</p>
-                      <button onClick={() => removeItem(item.id)} className="text-stone-300 hover:text-red-400 transition-colors text-lg ml-1">×</button>
+                      <button onClick={() => removeItem(item.id)} className="text-stone-300 hover:text-red-400 transition-colors text-lg">×</button>
                     </div>
                   ))}
                 </div>
@@ -108,7 +281,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 <button onClick={() => setStep("info")} className="w-full bg-teal-700 hover:bg-teal-600 text-white font-black py-3.5 rounded-2xl uppercase tracking-widest text-sm transition-colors">
-                  Continue to Info →
+                  Continue →
                 </button>
                 <Link href="/menu" className="block text-center text-stone-400 hover:text-teal-600 text-xs mt-4 font-bold uppercase tracking-wider transition-colors">← Keep Shopping</Link>
               </>
@@ -116,7 +289,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Info */}
+        {/* ── Info ── */}
         {step === "info" && (
           <form onSubmit={(e) => { e.preventDefault(); setStep("payment"); }}>
             <div className="bg-white border-2 border-amber-100 rounded-2xl p-6 mb-5 space-y-4">
@@ -135,63 +308,35 @@ export default function CheckoutPage() {
             </div>
             <div className="bg-white border-2 border-amber-100 rounded-2xl p-4 mb-5">
               <p className="text-stone-400 text-xs uppercase tracking-wider mb-2">Order Summary</p>
-              {items.map((i) => <div key={i.id} className="flex justify-between text-sm text-stone-500 py-0.5"><span>{i.name} × {i.quantity}</span><span>${(i.price * i.quantity).toFixed(2)}</span></div>)}
+              {items.map((i) => (
+                <div key={i.id} className="flex justify-between text-sm text-stone-500 py-0.5">
+                  <span>{i.name} × {i.quantity}</span><span>${(i.price * i.quantity).toFixed(2)}</span>
+                </div>
+              ))}
               <div className="flex justify-between text-stone-800 font-black border-t border-amber-100 pt-2 mt-2">
                 <span>Total</span><span className="text-teal-700">${grandTotal.toFixed(2)}</span>
               </div>
             </div>
-            <button type="submit" className="w-full bg-teal-700 hover:bg-teal-600 text-white font-black py-3.5 rounded-2xl uppercase tracking-widest text-sm transition-colors">Continue to Payment →</button>
-            <button type="button" onClick={() => setStep("cart")} className="block w-full text-center text-stone-400 hover:text-teal-600 text-xs mt-4 font-bold uppercase tracking-wider transition-colors">← Back to Cart</button>
-          </form>
-        )}
-
-        {/* Payment */}
-        {step === "payment" && (
-          <form onSubmit={handlePayNow}>
-            <div className="bg-white border-2 border-amber-100 rounded-2xl p-6 mb-4">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-teal-600">🔒</span>
-                <p className="text-xs text-stone-400 font-semibold">Demo checkout — no real payment processed</p>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Name on Card *</label>
-                  <input type="text" required placeholder="Jane Smith" value={payment.cardName} onChange={(e) => setPayment((p) => ({ ...p, cardName: e.target.value }))} className={inputCls()} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Card Number *</label>
-                  <input type="text" required inputMode="numeric" placeholder="1234 5678 9012 3456" value={payment.cardNumber} onChange={(e) => setPayment((p) => ({ ...p, cardNumber: formatCard(e.target.value) }))} maxLength={19} className={inputCls() + " font-mono tracking-widest"} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">Expiry *</label>
-                    <input type="text" required placeholder="MM/YY" value={payment.expiry} onChange={(e) => setPayment((p) => ({ ...p, expiry: formatExpiry(e.target.value) }))} maxLength={5} className={inputCls() + " font-mono"} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1.5">CVV *</label>
-                    <input type="text" required inputMode="numeric" placeholder="123" value={payment.cvv} onChange={(e) => setPayment((p) => ({ ...p, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))} maxLength={4} className={inputCls() + " font-mono"} />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              {["VISA", "MC", "AMEX", "DISC"].map((c) => <span key={c} className="text-xs bg-white border-2 border-amber-100 text-stone-400 px-2 py-1 rounded font-bold">{c}</span>)}
-            </div>
-            <div className="bg-white border-2 border-amber-100 rounded-2xl p-4 mb-5">
-              <div className="flex justify-between text-sm text-stone-400 mb-1"><span>Subtotal</span><span>${totalPrice.toFixed(2)}</span></div>
-              <div className="flex justify-between text-sm text-stone-400"><span>Tax (8%)</span><span>${tax.toFixed(2)}</span></div>
-              <div className="flex justify-between text-stone-800 font-black text-xl border-t border-amber-100 pt-3 mt-2">
-                <span>Total</span><span className="text-teal-700">${grandTotal.toFixed(2)}</span>
-              </div>
-            </div>
-            <button type="submit" disabled={processing} className="w-full bg-teal-700 hover:bg-teal-600 disabled:opacity-70 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-sm transition-colors flex items-center justify-center gap-3">
-              {processing ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Processing...</> : <>🔒 Pay ${grandTotal.toFixed(2)}</>}
+            <button type="submit" className="w-full bg-teal-700 hover:bg-teal-600 text-white font-black py-3.5 rounded-2xl uppercase tracking-widest text-sm transition-colors">
+              Continue to Payment →
             </button>
-            <button type="button" onClick={() => setStep("info")} className="block w-full text-center text-stone-400 hover:text-teal-600 text-xs mt-4 font-bold uppercase tracking-wider transition-colors">← Back</button>
+            <button type="button" onClick={() => setStep("cart")} className="block w-full text-center text-stone-400 hover:text-teal-600 text-xs mt-4 font-bold uppercase tracking-wider transition-colors">← Back</button>
           </form>
         )}
 
-        {/* Confirmation */}
+        {/* ── Payment (Square) ── */}
+        {step === "payment" && (
+          <SquarePaymentForm
+            grandTotal={grandTotal}
+            tax={tax}
+            totalPrice={totalPrice}
+            items={items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price }))}
+            onSuccess={() => { clearCart(); setStep("confirmation"); }}
+            onBack={() => setStep("info")}
+          />
+        )}
+
+        {/* ── Confirmation ── */}
         {step === "confirmation" && (
           <div className="bg-white border-2 border-amber-100 rounded-2xl p-8 text-center">
             <div className="text-7xl mb-4">🤠</div>
@@ -201,9 +346,9 @@ export default function CheckoutPage() {
               Confirmation sent to <strong className="text-stone-700">{contact.email}</strong>.<br />We&apos;ll see you at the park!
             </p>
             <div className="bg-amber-50 border-2 border-amber-100 rounded-2xl p-5 text-left mb-7 space-y-4">
-              <p className="text-stone-600 font-black text-xs uppercase tracking-widest mb-2">What Happens Next</p>
+              <p className="text-stone-500 font-black text-xs uppercase tracking-widest mb-2">What Happens Next</p>
               {[
-                { icon: "📧", title: "Check your email", desc: "Order details and QR code on their way." },
+                { icon: "📧", title: "Check your email", desc: "Order details and QR code are on their way." },
                 { icon: "📍", title: "Head to the park", desc: "7400 Niederwald Strasse, Niederwald, TX 78640" },
                 { icon: "📱", title: "Show your QR code", desc: "At the gate or food truck for instant access." },
               ].map((s) => (

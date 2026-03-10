@@ -1,69 +1,75 @@
 export interface Pavilion {
   id: string;
+  number: number;
   name: string;
   capacity: number;
   description: string;
   features: string[];
   pricePerHour: number;
-  /** Approximate SVG position as percent of map width/height */
+  /** Position as % of map image width/height for overlay marker */
   x: number;
   y: number;
 }
 
 export const pavilions: Pavilion[] = [
   {
-    id: "pavilion-a",
-    name: "Pavilion A — Creekside",
-    capacity: 50,
-    description:
-      "Our most popular pavilion, nestled beside the creek with natural shade and a beautiful wooded backdrop. Perfect for birthday parties and family reunions.",
-    features: ["Picnic tables (x8)", "Electric outlets", "Running water nearby", "Grill station"],
-    pricePerHour: 75,
-    x: 20,
-    y: 30,
-  },
-  {
-    id: "pavilion-b",
-    name: "Pavilion B — Garden View",
-    capacity: 30,
-    description:
-      "A charming mid-size pavilion overlooking the flower garden. Great for smaller celebrations and bridal showers.",
-    features: ["Picnic tables (x5)", "String lights", "Nearby restrooms"],
-    pricePerHour: 55,
-    x: 60,
-    y: 25,
-  },
-  {
-    id: "pavilion-c",
-    name: "Pavilion C — Main Lawn",
-    capacity: 100,
-    description:
-      "Our largest covered pavilion adjacent to the main lawn. Ideal for corporate events, large family gatherings, and group outings.",
-    features: ["Picnic tables (x16)", "Electric outlets", "PA system hookup", "Adjacent parking"],
-    pricePerHour: 120,
-    x: 40,
-    y: 55,
-  },
-  {
-    id: "pavilion-d",
-    name: "Pavilion D — Hilltop",
+    id: "pavilion-1",
+    number: 1,
+    name: "Pavilion 1",
     capacity: 40,
     description:
-      "Elevated pavilion with panoramic views of the park. A favorite spot for sunset events and photography sessions.",
-    features: ["Picnic tables (x6)", "Scenic overlook", "Breeze & shade"],
+      "Shaded pavilion in the upper left corner of the park, close to the fire pit and train road. Perfect for birthday parties and family reunions with a great view of the action.",
+    features: ["Picnic tables", "Shade cover", "Near fire pit", "Train road views"],
     pricePerHour: 65,
-    x: 75,
-    y: 60,
+    x: 27,
+    y: 32,
   },
   {
-    id: "pavilion-e",
-    name: "Pavilion E — Amphitheater Terrace",
+    id: "pavilion-2",
+    number: 2,
+    name: "Pavilion 2",
+    capacity: 40,
+    description:
+      "Sits right alongside Pavilion 1 near the fire pit area. Great for groups who want to spread out across two adjacent pavilions for larger gatherings.",
+    features: ["Picnic tables", "Shade cover", "Near fire pit", "Adjacent to Pavilion 1"],
+    pricePerHour: 65,
+    x: 34,
+    y: 32,
+  },
+  {
+    id: "pavilion-3",
+    number: 3,
+    name: "Pavilion 3",
+    capacity: 50,
+    description:
+      "Central pavilion with direct views of the playground — ideal for kids' parties so parents can keep an eye on the fun while enjoying the shade.",
+    features: ["Picnic tables", "Shade cover", "Playground views", "Central location"],
+    pricePerHour: 75,
+    x: 57,
+    y: 46,
+  },
+  {
+    id: "pavilion-4",
+    number: 4,
+    name: "Pavilion 4",
+    capacity: 50,
+    description:
+      "Right next to the playground and gel blaster area. The go-to spot for active groups who want to be in the middle of all the excitement.",
+    features: ["Picnic tables", "Shade cover", "Near gel blasters", "Near playground"],
+    pricePerHour: 75,
+    x: 57,
+    y: 57,
+  },
+  {
+    id: "pavilion-5",
+    number: 5,
+    name: "Pavilion 5",
     capacity: 60,
     description:
-      "Located adjacent to the amphitheater, this pavilion is perfect for pre-show gatherings and private concert parties.",
-    features: ["Picnic tables (x10)", "Amphitheater access", "Bar service available"],
+      "Our largest covered pavilion — a colorful tent structure near the center of the park. Spacious, festive, and perfect for big celebrations.",
+    features: ["Picnic tables (x10)", "Large tent cover", "Center of park", "Great for big groups"],
     pricePerHour: 90,
-    x: 30,
-    y: 78,
+    x: 50,
+    y: 66,
   },
 ];
