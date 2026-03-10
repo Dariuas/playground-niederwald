@@ -30,15 +30,17 @@ export default function PavilionMap() {
         </p>
       </div>
 
-      {/* Map container */}
-      <div className="relative w-full rounded-2xl overflow-hidden border-2 border-amber-100 shadow-lg select-none">
+      {/* Map container — aspect-ratio locks height to the image proportions on all screen sizes */}
+      <div
+        className="relative w-full rounded-2xl overflow-hidden border-2 border-amber-100 shadow-lg select-none"
+        style={{ aspectRatio: "1270 / 952" }}
+      >
         {/* Background map image */}
         <Image
           src="/images/park-map.png"
           alt="The Playground @niederwald park map"
-          width={1270}
-          height={952}
-          className="w-full h-auto block"
+          fill
+          className="object-cover"
           priority
         />
 

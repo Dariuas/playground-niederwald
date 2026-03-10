@@ -18,11 +18,11 @@ export const pavilions: Pavilion[] = [
     name: "Pavilion 1",
     capacity: 40,
     description:
-      "Shaded pavilion in the upper left corner of the park, close to the fire pit and train road. Perfect for birthday parties and family reunions with a great view of the action.",
+      "Shaded pavilion near the fire pit — a great spot for birthday parties and family reunions with views of the train road and easy access to the action.",
     features: ["Picnic tables", "Shade cover", "Near fire pit", "Train road views"],
     pricePerHour: 65,
-    x: 27,
-    y: 32,
+    x: 36,
+    y: 37,
   },
   {
     id: "pavilion-2",
@@ -33,8 +33,8 @@ export const pavilions: Pavilion[] = [
       "Sits right alongside Pavilion 1 near the fire pit area. Great for groups who want to spread out across two adjacent pavilions for larger gatherings.",
     features: ["Picnic tables", "Shade cover", "Near fire pit", "Adjacent to Pavilion 1"],
     pricePerHour: 65,
-    x: 34,
-    y: 32,
+    x: 44,
+    y: 37,
   },
   {
     id: "pavilion-3",
@@ -45,8 +45,8 @@ export const pavilions: Pavilion[] = [
       "Central pavilion with direct views of the playground — ideal for kids' parties so parents can keep an eye on the fun while enjoying the shade.",
     features: ["Picnic tables", "Shade cover", "Playground views", "Central location"],
     pricePerHour: 75,
-    x: 57,
-    y: 46,
+    x: 61,
+    y: 42,
   },
   {
     id: "pavilion-4",
@@ -57,8 +57,8 @@ export const pavilions: Pavilion[] = [
       "Right next to the playground and gel blaster area. The go-to spot for active groups who want to be in the middle of all the excitement.",
     features: ["Picnic tables", "Shade cover", "Near gel blasters", "Near playground"],
     pricePerHour: 75,
-    x: 57,
-    y: 57,
+    x: 61,
+    y: 52,
   },
   {
     id: "pavilion-5",
@@ -69,7 +69,7 @@ export const pavilions: Pavilion[] = [
       "Our largest covered pavilion — a colorful tent structure near the center of the park. Spacious, festive, and perfect for big celebrations.",
     features: ["Picnic tables (x10)", "Large tent cover", "Center of park", "Great for big groups"],
     pricePerHour: 90,
-    x: 50,
-    y: 66,
+    x: 53,
+    y: 62,
   },
 ];
