@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${geist.className} bg-stone-950 text-stone-100`}>
+      <body className={`${geist.className} bg-amber-50 text-stone-900`}>
         <CartProvider>
           <Navbar />
           <main>{children}</main>
