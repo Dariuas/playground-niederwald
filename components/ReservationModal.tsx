@@ -24,9 +24,6 @@ function toMaxDate() {
   const d = new Date(); d.setMonth(d.getMonth() + 6);
   return d.toISOString().split("T")[0];
 }
-function calcTotal(p: Pavilion, dur: number) {
-  return p.firstHourPrice + Math.max(0, dur - 1) * p.additionalHourPrice;
-}
 function inputCls() {
   return "w-full border-2 border-amber-100 rounded-xl px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white";
 }
@@ -35,6 +32,23 @@ interface Props { pavilion: Pavilion; onClose: () => void; }
 
 export default function ReservationModal({ pavilion, onClose }: Props) {
   const [step, setStep] = useState<Step>("schedule");
+
+  // ── Live pricing (falls back to static data) ──
+  const [firstHourPrice,      setFirstHourPrice]      = useState(pavilion.firstHourPrice);
+  const [additionalHourPrice, setAdditionalHourPrice] = useState(pavilion.additionalHourPrice);
+
+  useEffect(() => {
+    fetch("/api/pavilions")
+      .then((r) => r.json())
+      .then((list: { id: string; firstHourPrice: number; additionalHourPrice: number }[]) => {
+        const match = list.find((p) => p.id === pavilion.id);
+        if (match) {
+          setFirstHourPrice(match.firstHourPrice);
+          setAdditionalHourPrice(match.additionalHourPrice);
+        }
+      })
+      .catch(() => {/* keep static fallback */});
+  }, [pavilion.id]);
 
   // ── Schedule ──
   const [date,     setDate]     = useState("");
@@ -59,7 +73,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
   // ── Confirmed ──
   const [reservationId, setReservationId] = useState("");
 
-  const total = calcTotal(pavilion, duration);
+  const total = firstHourPrice + Math.max(0, duration - 1) * additionalHourPrice;
 
   // ── Check availability when date / time / duration change ──
   useEffect(() => {
@@ -177,7 +191,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
             <h2 className="text-lg font-black text-white">{pavilion.name}</h2>
             {step !== "confirmed" && (
               <p className="text-teal-200 text-xs mt-0.5">
-                Up to {pavilion.capacity} guests · $35 first hr · $15/hr after
+                Up to {pavilion.capacity} guests · ${firstHourPrice} first hr · ${additionalHourPrice}/hr after
               </p>
             )}
           </div>
@@ -243,7 +257,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
               {/* Price preview */}
               <div className="bg-amber-50 border-2 border-amber-100 rounded-xl px-4 py-3">
                 <p className="text-stone-400 text-xs">
-                  {duration === 1 ? "1 hr at $35" : `$35 first hr + ${duration - 1} × $15/hr`}
+                  {duration === 1 ? `1 hr at $${firstHourPrice}` : `$${firstHourPrice} first hr + ${duration - 1} × $${additionalHourPrice}/hr`}
                 </p>
                 <p className="text-teal-700 font-black text-xl mt-0.5">
                   ${total} <span className="text-stone-400 text-sm font-normal">due today</span>
