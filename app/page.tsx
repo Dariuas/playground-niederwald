@@ -6,15 +6,13 @@ const activities = [
   { icon: "🏋️", label: "Jumping Blob", color: "bg-teal-50 border-teal-200", iconBg: "bg-teal-100", desc: "Launch yourself sky-high off our giant inflatable blob. A fan favorite for every age!" },
   { icon: "🎠", label: "Play Zone", color: "bg-green-50 border-green-200", iconBg: "bg-green-100", desc: "Slides, climbing walls, swings, and more — all shaded for those Texas afternoons." },
   { icon: "🎨", label: "Face Painting", color: "bg-pink-50 border-pink-200", iconBg: "bg-pink-100", desc: "Pro face painters turning kids into their favorite animals, heroes, and characters." },
-  { icon: "💦", label: "Gel Blasters", color: "bg-blue-50 border-blue-200", iconBg: "bg-blue-100", desc: "Exciting gel blaster battles for the whole crew — fun, safe, and action-packed!" },
-  { icon: "🎶", label: "Live Music", color: "bg-purple-50 border-purple-200", iconBg: "bg-purple-100", desc: "Open-air amphitheater hosting headliners and local acts all season long." },
+  { icon: "💦", label: "Gel Blasters", color: "bg-blue-50 border-blue-200", iconBg: "bg-blue-100", desc: "Exciting gel blaster battles for the whole crew — fun, safe, and action-packed!", comingSoon: true },
 ];
 
 const quickLinks = [
-  { href: "/playground", label: "Activities", icon: "🤠", desc: "Train rides, blob, gel blasters, face painting, and pavilion bookings.", bg: "bg-amber-400", text: "text-stone-900" },
-  { href: "/menu", label: "Food & Drinks", icon: "🌮", desc: "3 food trucks and sweet treats on-site.", bg: "bg-teal-700", text: "text-white" },
-  { href: "/amphitheater", label: "Live Music", icon: "🎸", desc: "Upcoming shows, ticket info, and private events.", bg: "bg-purple-700", text: "text-white" },
-  { href: "/contact", label: "Contact Us", icon: "📞", desc: "Book a pavilion, plan a party, or just say hey.", bg: "bg-orange-500", text: "text-white" },
+  { href: "/playground", label: "Activities & Tickets", icon: "🤠", desc: "Train rides, blob, gel blasters, face painting — buy tickets and book a pavilion online.", bg: "bg-amber-400", text: "text-stone-900" },
+  { href: "/playground#pavilions", label: "Reserve a Pavilion", icon: "🏡", desc: "Pick your spot on the map and reserve a shaded pavilion for your group.", bg: "bg-teal-700", text: "text-white" },
+  { href: "/contact", label: "Contact Us", icon: "📞", desc: "Book a full park rental, plan a party, or just say hey.", bg: "bg-orange-500", text: "text-white" },
 ];
 
 export default function HomePage() {
@@ -87,7 +85,12 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {activities.map((a) => (
-            <div key={a.label} className={`bg-white rounded-2xl border-2 ${a.color} p-5 hover:shadow-md transition-all group`}>
+            <div key={a.label} className={`relative bg-white rounded-2xl border-2 ${a.color} p-5 hover:shadow-md transition-all group ${a.comingSoon ? "opacity-70" : ""}`}>
+              {a.comingSoon && (
+                <span className="absolute top-3 right-3 bg-amber-400 text-stone-900 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest">
+                  Coming Soon
+                </span>
+              )}
               <div className={`w-12 h-12 ${a.iconBg} rounded-xl flex items-center justify-center text-2xl mb-3`}>
                 {a.icon}
               </div>

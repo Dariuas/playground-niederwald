@@ -4,6 +4,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -21,11 +23,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geist.className} bg-amber-50 text-stone-900`}>
-        <CartProvider>
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
-        </CartProvider>
+        <ThemeProvider>
+          <CartProvider>
+            <Navbar />
+            <main>{children}</main>
+            <Footer />
+            <ThemeToggle />
+          </CartProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

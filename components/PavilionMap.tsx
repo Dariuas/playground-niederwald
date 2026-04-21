@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { pavilions, Pavilion } from "@/data/pavilions";
 import ReservationModal from "./ReservationModal";
+import ParkMapSVG from "./ParkMapSVG";
 
 // Non-clickable landmark labels overlaid on the map
 const landmarks = [
@@ -22,12 +23,23 @@ export default function PavilionMap() {
 
   return (
     <div id="pavilions" className="scroll-mt-20">
-      <div className="mb-6">
-        <p className="text-teal-600 text-xs uppercase tracking-widest font-bold mb-1">Pick Your Spot</p>
-        <h2 className="text-3xl font-black text-stone-800">Pavilion Reservations</h2>
-        <p className="text-stone-500 text-sm mt-1 max-w-xl">
-          Click any numbered pavilion on the map below to see details and reserve your spot.
-        </p>
+      {/* Pavilion photo */}
+      <div className="relative w-full h-56 sm:h-72 rounded-2xl overflow-hidden mb-6 shadow-md">
+        <Image
+          src="/images/pavilion-photo.jpg"
+          alt="The Playground @niederwald — shaded pavilions on the property"
+          fill
+          className="object-cover object-center"
+          sizes="(max-width: 768px) 100vw, 1200px"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-950/20 to-transparent" />
+        <div className="absolute bottom-5 left-6">
+          <p className="text-amber-400 text-xs uppercase tracking-widest font-bold mb-1">Reserve Your Spot</p>
+          <h2 className="text-3xl font-black text-white drop-shadow-lg">Pavilion Reservations</h2>
+          <p className="text-stone-200 text-sm mt-1">
+            Click any numbered pavilion on the map to see details and book your spot.
+          </p>
+        </div>
       </div>
 
       {/* Map container — aspect-ratio locks height to the image proportions on all screen sizes */}
@@ -35,14 +47,8 @@ export default function PavilionMap() {
         className="relative w-full rounded-2xl overflow-hidden border-2 border-amber-100 shadow-lg select-none"
         style={{ aspectRatio: "1270 / 952" }}
       >
-        {/* Background map image */}
-        <Image
-          src="/images/park-map.png"
-          alt="The Playground @niederwald park map"
-          fill
-          className="object-cover"
-          priority
-        />
+        {/* SVG park map — structures drawn at exact pavilion coordinates */}
+        <ParkMapSVG />
 
         {/* Landmark labels */}
         {landmarks.map((lm) => (
@@ -99,7 +105,7 @@ export default function PavilionMap() {
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 pointer-events-none">
                   <div className="bg-stone-900 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xl whitespace-nowrap text-center">
                     <p>{p.name}</p>
-                    <p className="text-amber-400 font-black">${p.pricePerHour}/hr · up to {p.capacity} guests</p>
+                    <p className="text-amber-400 font-black">$35 first hr · $15/hr after · up to {p.capacity} guests</p>
                     <p className="text-stone-400 text-[10px] mt-0.5">Click to reserve</p>
                   </div>
                   {/* Arrow */}
@@ -124,7 +130,7 @@ export default function PavilionMap() {
             </span>
             <span className="text-left leading-tight">
               Pavilion {p.number}<br />
-              <span className="text-stone-400 font-normal">${p.pricePerHour}/hr</span>
+              <span className="text-stone-400 font-normal">From $35/hr</span>
             </span>
           </button>
         ))}

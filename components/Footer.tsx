@@ -26,7 +26,6 @@ export default function Footer() {
           <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-4">Explore</h4>
           <ul className="space-y-2 text-sm text-teal-300">
             <li><Link href="/playground" className="hover:text-amber-400 transition-colors">Activities</Link></li>
-            <li><Link href="/menu" className="hover:text-amber-400 transition-colors">Food & Drinks</Link></li>
             <li><Link href="/amphitheater" className="hover:text-amber-400 transition-colors">Live Music</Link></li>
             <li><Link href="/playground#pavilions" className="hover:text-amber-400 transition-colors">Reserve a Pavilion</Link></li>
           </ul>
@@ -45,7 +44,7 @@ export default function Footer() {
           <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-4">Find Us</h4>
           <ul className="space-y-2 text-sm text-teal-300">
             <li>7400 Niederwald Strasse<br />Niederwald, TX 78640</li>
-            <li><a href="tel:+15124135948" className="hover:text-amber-400 transition-colors">(512) 413-5948</a></li>
+            <li><a href="tel:+15125377554" className="hover:text-amber-400 transition-colors">(512) 537-7554</a></li>
             <li><a href="mailto:info@playgroundniederwald.com" className="hover:text-amber-400 transition-colors text-xs break-all">info@playgroundniederwald.com</a></li>
           </ul>
         </div>

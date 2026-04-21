@@ -4,4 +4,40 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   background-color: #fffbeb;
   color: #1c1917;
+  transition: background-color 0.3s ease;
+}
+
+/* ── Winter theme ─────────────────────────────────────────────────
+   Remaps Tailwind's CSS custom properties so every utility class
+   that references amber/teal automatically adopts the winter palette.
+──────────────────────────────────────────────────────────────────── */
+body.winter {
+  background-color: #f0f4f8;
+
+  /* amber → icy blue/slate */
+  --color-amber-50:  var(--color-slate-100);
+  --color-amber-100: var(--color-blue-100);
+  --color-amber-200: var(--color-blue-200);
+  --color-amber-300: var(--color-sky-300);
+  --color-amber-400: var(--color-sky-400);
+
+  /* teal → deep navy/blue */
+  --color-teal-50:  var(--color-blue-50);
+  --color-teal-100: var(--color-blue-100);
+  --color-teal-200: var(--color-blue-200);
+  --color-teal-600: var(--color-blue-600);
+  --color-teal-700: var(--color-blue-900);
+
+  /* orange accent sections → cool indigo */
+  --color-orange-50:  var(--color-indigo-50);
+  --color-orange-100: var(--color-indigo-100);
+  --color-orange-200: var(--color-indigo-200);
+  --color-orange-500: var(--color-indigo-500);
+}
+
+/* Smooth color transitions across interactive elements */
+body.winter *,
+body.winter *::before,
+body.winter *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
 }

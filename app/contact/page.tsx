@@ -20,15 +20,30 @@ function inputCls() {
 export default function ContactPage() {
   const [form, setForm] = useState<FormState>(INITIAL);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    console.log("Contact form submitted:", form);
-    setSubmitted(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Failed to send message.");
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong. Please try again or call us directly.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -59,7 +74,7 @@ export default function ContactPage() {
             <div className="bg-white border-2 border-amber-100 rounded-2xl p-5 space-y-2">
               <h3 className="font-black text-stone-800 text-base mb-2">📍 Find Us</h3>
               <p className="text-stone-500 text-sm">7400 Niederwald Strasse<br />Niederwald, TX 78640</p>
-              <p><a href="tel:+15124135948" className="text-stone-500 hover:text-teal-700 transition-colors text-sm">(512) 413-5948</a></p>
+              <p><a href="tel:+15125377554" className="text-stone-500 hover:text-teal-700 transition-colors text-sm">(512) 537-7554</a></p>
               <p><a href="mailto:info@playgroundniederwald.com" className="text-stone-500 hover:text-teal-700 transition-colors text-xs">info@playgroundniederwald.com</a></p>
               <p className="text-stone-400 text-xs pt-1">Mon–Fri · 9am – 9pm</p>
               <div className="flex gap-4 pt-1">
@@ -111,8 +126,11 @@ export default function ContactPage() {
                     <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Message *</label>
                     <textarea name="message" required rows={4} value={form.message} onChange={handleChange} placeholder="Tell us about your event, dates, group size..." className={inputCls() + " resize-none"} />
                   </div>
-                  <button type="submit" className="w-full bg-teal-700 hover:bg-teal-600 text-white font-black py-3 rounded-xl transition-colors uppercase tracking-widest text-sm">
-                    Send Message
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-sm text-red-600 font-semibold">{error}</div>
+                  )}
+                  <button type="submit" disabled={loading} className="w-full bg-teal-700 hover:bg-teal-600 disabled:opacity-60 text-white font-black py-3 rounded-xl transition-colors uppercase tracking-widest text-sm flex items-center justify-center gap-2">
+                    {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending…</> : "Send Message"}
                   </button>
                 </form>
               </>

@@ -53,13 +53,17 @@ function SquarePaymentForm({
   items,
   totalPrice,
   tax,
+  customerName,
+  customerEmail,
 }: {
   grandTotal: number;
-  onSuccess: () => void;
+  onSuccess: (orderNumber: string) => void;
   onBack: () => void;
   items: { name: string; quantity: number; price: number }[];
   totalPrice: number;
   tax: number;
+  customerName: string;
+  customerEmail: string;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cardInstance = useRef<unknown>(null);
@@ -116,17 +120,29 @@ function SquarePaymentForm({
       const result = await cardInstance.current.tokenize();
 
       if (result.status === "OK") {
-        // ── Phase 2: send result.token to your server endpoint ──
-        // Example:
-        //   await fetch("/api/payment", {
-        //     method: "POST",
-        //     body: JSON.stringify({ token: result.token, amount: Math.round(grandTotal * 100) }),
-        //   });
-        console.log("Square token:", result.token, "| Amount:", Math.round(grandTotal * 100), "cents");
+        const res = await fetch("/api/payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: result.token,
+            amountCents: Math.round(grandTotal * 100),
+            customerName,
+            customerEmail,
+            items,
+            totalPrice,
+            tax,
+          }),
+        });
 
-        // Simulate a brief network call, then confirm
-        await new Promise((r) => setTimeout(r, 1200));
-        onSuccess();
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error ?? "Payment failed. Please try again.");
+          setProcessing(false);
+          return;
+        }
+
+        onSuccess(data.orderNumber);
       } else {
         const msgs = result.errors?.map((e: { message: string }) => e.message).join(", ") ?? "Payment failed.";
         setError(msgs);
@@ -220,7 +236,7 @@ export default function CheckoutPage() {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCart();
   const [step, setStep] = useState<Step>("cart");
   const [contact, setContact] = useState<ContactInfo>(EMPTY_CONTACT);
-  const [orderNumber] = useState(() => "PN-" + Math.floor(100000 + Math.random() * 900000));
+  const [orderNumber, setOrderNumber] = useState("");
 
   const tax = totalPrice * 0.08;
   const grandTotal = totalPrice + tax;
@@ -250,8 +266,8 @@ export default function CheckoutPage() {
                 <div className="text-6xl mb-4">🛒</div>
                 <p className="text-stone-800 font-black text-xl mb-2">Your cart is empty</p>
                 <p className="text-stone-400 text-sm mb-8">Head back and add some items first!</p>
-                <Link href="/menu" className="inline-block bg-teal-700 hover:bg-teal-600 text-white font-black py-2.5 px-8 rounded-xl uppercase tracking-widest text-sm transition-colors">
-                  Browse Menu
+                <Link href="/playground" className="inline-block bg-teal-700 hover:bg-teal-600 text-white font-black py-2.5 px-8 rounded-xl uppercase tracking-widest text-sm transition-colors">
+                  Buy Tickets
                 </Link>
               </div>
             ) : (
@@ -331,7 +347,9 @@ export default function CheckoutPage() {
             tax={tax}
             totalPrice={totalPrice}
             items={items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price }))}
-            onSuccess={() => { clearCart(); setStep("confirmation"); }}
+            customerName={contact.name}
+            customerEmail={contact.email}
+            onSuccess={(num) => { clearCart(); setOrderNumber(num); setStep("confirmation"); }}
             onBack={() => setStep("info")}
           />
         )}
