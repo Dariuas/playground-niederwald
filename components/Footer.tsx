@@ -36,7 +36,7 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-teal-300">
             <li><Link href="/contact" className="hover:text-amber-400 transition-colors">Contact</Link></li>
             <li>Mon–Fri: 9am – 9pm</li>
-            <li className="text-amber-400 font-bold">🎉 Grand Opening: May 3rd, 2026</li>
+            <li className="text-amber-400 font-bold">🎉 Grand Opening: May 16th, 2026</li>
           </ul>
         </div>
 

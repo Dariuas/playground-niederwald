@@ -7,6 +7,7 @@ export interface Pavilion {
   features: string[];
   firstHourPrice: number;
   additionalHourPrice: number;
+  squareCatalogId: string; // paste from Square Dashboard → Catalog
   /** Position as % of map image width/height for overlay marker */
   x: number;
   y: number;
@@ -21,8 +22,9 @@ export const pavilions: Pavilion[] = [
     description:
       "Shaded pavilion near the fire pit — a great spot for birthday parties and family reunions with views of the train road and easy access to the action.",
     features: ["Picnic tables", "Shade cover", "Near fire pit", "Train road views"],
-    firstHourPrice: 35,
-    additionalHourPrice: 15,
+    firstHourPrice: 30,
+    additionalHourPrice: 20,
+    squareCatalogId: "",
     x: 36,
     y: 37,
   },
@@ -34,8 +36,9 @@ export const pavilions: Pavilion[] = [
     description:
       "Sits right alongside Pavilion 1 near the fire pit area. Great for groups who want to spread out across two adjacent pavilions for larger gatherings.",
     features: ["Picnic tables", "Shade cover", "Near fire pit", "Adjacent to Pavilion 1"],
-    firstHourPrice: 35,
-    additionalHourPrice: 15,
+    firstHourPrice: 30,
+    additionalHourPrice: 20,
+    squareCatalogId: "",
     x: 44,
     y: 37,
   },
@@ -47,8 +50,9 @@ export const pavilions: Pavilion[] = [
     description:
       "Central pavilion with direct views of the playground — ideal for kids' parties so parents can keep an eye on the fun while enjoying the shade.",
     features: ["Picnic tables", "Shade cover", "Playground views", "Central location"],
-    firstHourPrice: 35,
-    additionalHourPrice: 15,
+    firstHourPrice: 30,
+    additionalHourPrice: 20,
+    squareCatalogId: "",
     x: 61,
     y: 42,
   },
@@ -60,8 +64,9 @@ export const pavilions: Pavilion[] = [
     description:
       "Right next to the playground and gel blaster area. The go-to spot for active groups who want to be in the middle of all the excitement.",
     features: ["Picnic tables", "Shade cover", "Near gel blasters", "Near playground"],
-    firstHourPrice: 35,
-    additionalHourPrice: 15,
+    firstHourPrice: 30,
+    additionalHourPrice: 20,
+    squareCatalogId: "",
     x: 61,
     y: 52,
   },
@@ -73,8 +78,9 @@ export const pavilions: Pavilion[] = [
     description:
       "Our largest covered pavilion — a colorful tent structure near the center of the park. Spacious, festive, and perfect for big celebrations.",
     features: ["Picnic tables (x10)", "Large tent cover", "Center of park", "Great for big groups"],
-    firstHourPrice: 35,
-    additionalHourPrice: 15,
+    firstHourPrice: 30,
+    additionalHourPrice: 20,
+    squareCatalogId: "",
     x: 53,
     y: 62,
   },

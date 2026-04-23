@@ -105,7 +105,7 @@ export default function PavilionMap() {
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 pointer-events-none">
                   <div className="bg-stone-900 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xl whitespace-nowrap text-center">
                     <p>{p.name}</p>
-                    <p className="text-amber-400 font-black">$35 first hr · $15/hr after · up to {p.capacity} guests</p>
+                    <p className="text-amber-400 font-black">${p.firstHourPrice} first hr · ${p.additionalHourPrice}/hr after · up to {p.capacity} guests</p>
                     <p className="text-stone-400 text-[10px] mt-0.5">Click to reserve</p>
                   </div>
                   {/* Arrow */}
@@ -130,7 +130,7 @@ export default function PavilionMap() {
             </span>
             <span className="text-left leading-tight">
               Pavilion {p.number}<br />
-              <span className="text-stone-400 font-normal">From $35/hr</span>
+              <span className="text-stone-400 font-normal">From ${p.firstHourPrice}/hr</span>
             </span>
           </button>
         ))}

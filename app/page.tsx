@@ -39,7 +39,7 @@ export default function HomePage() {
           <div className="inline-flex items-center gap-2 bg-black/40 border border-amber-400/40 backdrop-blur-sm rounded-full px-5 py-2 mb-6">
             <span className="text-amber-400">★</span>
             <span className="text-amber-300 text-xs font-bold uppercase tracking-widest">
-              Niederwald, Texas · Grand Opening May 3rd, 2026
+              Niederwald, Texas · Grand Opening May 16th, 2026
             </span>
             <span className="text-amber-400">★</span>
           </div>
@@ -72,7 +72,7 @@ export default function HomePage() {
       {/* ── Ticker ── */}
       <div className="bg-teal-700 py-3.5">
         <p className="text-center text-white font-black text-xs uppercase tracking-[0.3em]">
-          ★ &nbsp; All The Fun In One Place &nbsp; ★ &nbsp; Niederwald, TX &nbsp; ★ &nbsp; Mon–Fri 9am–9pm &nbsp; ★ &nbsp; Grand Opening May 3rd, 2026 &nbsp; ★
+          ★ &nbsp; All The Fun In One Place &nbsp; ★ &nbsp; Niederwald, TX &nbsp; ★ &nbsp; Mon–Fri 9am–9pm &nbsp; ★ &nbsp; Grand Opening May 16th, 2026 &nbsp; ★
         </p>
       </div>
 
@@ -181,7 +181,7 @@ export default function HomePage() {
         <div className="relative max-w-xl mx-auto">
           <div className="text-5xl mb-4">🤠</div>
           <h2 className="text-4xl font-black text-white mb-2">Grand Opening</h2>
-          <p className="text-amber-400 text-3xl font-black mb-4">May 3rd, 2026</p>
+          <p className="text-amber-400 text-3xl font-black mb-4">May 16th, 2026</p>
           <p className="text-teal-100 leading-relaxed mb-8">
             Be among the first through the gates. We can&apos;t wait to see y&apos;all out here!
           </p>
