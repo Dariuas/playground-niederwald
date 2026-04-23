@@ -20,6 +20,21 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
+  // Check if pavilion is active
+  const { data: config } = await supabase
+    .from("pavilion_configs")
+    .select("is_active")
+    .eq("pavilion_id", pavilionId)
+    .maybeSingle();
+
+  if (config && config.is_active === false) {
+    return NextResponse.json({
+      date, pavilionId, available: false,
+      message: "This pavilion is not currently available for booking.",
+      bookedSlots: [],
+    });
+  }
+
   // Fetch all active bookings for this pavilion on this date
   const { data: bookings, error } = await supabase
     .from("pavilion_bookings")

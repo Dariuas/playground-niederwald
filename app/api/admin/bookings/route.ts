@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin, addHoursToTime } from "@/lib/supabase";
+import { pavilions } from "@/data/pavilions";
+import { requireAuth } from "@/lib/adminAuth";
+import { randomUUID } from "crypto";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -45,4 +48,67 @@ export async function GET(req: NextRequest) {
   };
 
   return NextResponse.json({ bookings: all, summary });
+}
+
+export async function POST(req: NextRequest) {
+  await requireAuth();
+
+  const body = await req.json();
+  const { pavilionId, date, startTime, durationHours, guestName, guestEmail, guestPhone, notes, totalCents } = body;
+
+  if (!pavilionId || !date || !startTime || !durationHours || !guestName) {
+    return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  const pavilion = pavilions.find((p) => p.id === pavilionId);
+  if (!pavilion) {
+    return NextResponse.json({ error: "Invalid pavilion." }, { status: 400 });
+  }
+
+  const endTime = addHoursToTime(startTime, durationHours);
+  const reservationId = `ADMIN-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+  const supabase = getSupabaseAdmin();
+
+  // Check for conflicts
+  const { data: conflicts } = await supabase
+    .from("pavilion_bookings")
+    .select("id")
+    .eq("pavilion_id", pavilionId)
+    .eq("date", date)
+    .not("status", "in", '("cancelled","refunded")')
+    .lt("start_time", endTime)
+    .gt("end_time", startTime);
+
+  if (conflicts && conflicts.length > 0) {
+    return NextResponse.json({ error: "Time slot conflicts with an existing booking." }, { status: 409 });
+  }
+
+  const { data, error } = await supabase
+    .from("pavilion_bookings")
+    .insert({
+      reservation_id:   reservationId,
+      pavilion_id:      pavilionId,
+      pavilion_name:    pavilion.name,
+      date,
+      start_time:       startTime,
+      end_time:         endTime,
+      duration_hours:   durationHours,
+      guest_name:       guestName,
+      guest_email:      guestEmail ?? "",
+      guest_phone:      guestPhone ?? null,
+      total_cents:      totalCents ?? 0,
+      status:           "confirmed",
+      square_payment_id: null,
+      notes:            notes ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Manual booking insert error:", error);
+    return NextResponse.json({ error: "Failed to create booking." }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, booking: data, reservationId });
 }

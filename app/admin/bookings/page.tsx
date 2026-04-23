@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { pavilions } from "@/data/pavilions";
 
 type Booking = {
   id: string;
@@ -64,6 +65,170 @@ function formatTime(t: string) {
   return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
+const EMPTY_FORM = {
+  pavilionId: pavilions[0]?.id ?? "",
+  date: "",
+  startTime: "10:00",
+  durationHours: 2,
+  guestName: "",
+  guestEmail: "",
+  guestPhone: "",
+  notes: "",
+  totalCents: 0,
+};
+
+function AddBookingPanel({ onAdded }: { onAdded: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  function set(field: keyof typeof EMPTY_FORM, value: string | number) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setFeedback(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFeedback(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          durationHours: Number(form.durationHours),
+          totalCents: Math.round(Number(form.totalCents) * 100),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeedback({ type: "error", message: data.error ?? "Failed to create booking." });
+      } else {
+        setFeedback({ type: "success", message: `Booking created — ID: ${data.reservationId}` });
+        setForm(EMPTY_FORM);
+        onAdded();
+      }
+    } catch {
+      setFeedback({ type: "error", message: "Network error. Please try again." });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const inputCls = "w-full border-2 border-stone-200 rounded-xl px-3 py-2 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-teal-400";
+
+  return (
+    <div className="mb-6 bg-white border-2 border-teal-200 rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-6 py-4 hover:bg-teal-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="w-8 h-8 bg-teal-100 rounded-xl flex items-center justify-center text-teal-700 font-black text-lg">+</span>
+          <span className="text-stone-800 font-black">Add Manual Booking / Owner Hold</span>
+        </div>
+        <span className="text-stone-400 text-lg">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <form onSubmit={handleSubmit} className="px-6 pb-6 border-t border-teal-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+            {/* Pavilion */}
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Pavilion *</label>
+              <select value={form.pavilionId} onChange={(e) => set("pavilionId", e.target.value)} required className={inputCls}>
+                {pavilions.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date */}
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Date *</label>
+              <input type="date" required value={form.date} onChange={(e) => set("date", e.target.value)} className={inputCls} />
+            </div>
+
+            {/* Start time */}
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Start Time *</label>
+              <input type="time" required value={form.startTime} onChange={(e) => set("startTime", e.target.value)} className={inputCls} />
+            </div>
+
+            {/* Duration */}
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Duration (hours) *</label>
+              <input type="number" required min={1} max={12} value={form.durationHours}
+                onChange={(e) => set("durationHours", e.target.value)} className={inputCls} />
+            </div>
+
+            {/* Guest name */}
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Name *</label>
+              <input type="text" required value={form.guestName} placeholder="Owner Hold / Guest Name"
+                onChange={(e) => set("guestName", e.target.value)} className={inputCls} />
+            </div>
+
+            {/* Guest email */}
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Email</label>
+              <input type="email" value={form.guestEmail} placeholder="Optional"
+                onChange={(e) => set("guestEmail", e.target.value)} className={inputCls} />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Phone</label>
+              <input type="tel" value={form.guestPhone} placeholder="Optional"
+                onChange={(e) => set("guestPhone", e.target.value)} className={inputCls} />
+            </div>
+
+            {/* Total charged */}
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Amount Charged ($)</label>
+              <input type="number" min={0} step="0.01" value={form.totalCents === 0 ? "" : form.totalCents / 100}
+                placeholder="0.00 for owner hold"
+                onChange={(e) => set("totalCents", e.target.value === "" ? 0 : Math.round(parseFloat(e.target.value) * 100))}
+                className={inputCls} />
+            </div>
+
+            {/* Notes — full width */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">Notes</label>
+              <textarea value={form.notes} placeholder="e.g. Owner hold — staff event, no charge"
+                onChange={(e) => set("notes", e.target.value)} rows={2}
+                className={inputCls + " resize-none"} />
+            </div>
+          </div>
+
+          {feedback && (
+            <div className={`mt-4 rounded-xl px-4 py-3 text-sm font-semibold ${
+              feedback.type === "success"
+                ? "bg-green-50 border border-green-200 text-green-800"
+                : "bg-red-50 border border-red-200 text-red-700"
+            }`}>
+              {feedback.message}
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-4">
+            <button type="submit" disabled={submitting}
+              className="bg-teal-700 hover:bg-teal-600 disabled:opacity-60 text-white font-black px-6 py-2.5 rounded-xl text-sm transition-colors">
+              {submitting ? "Saving…" : "Add Booking"}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); setFeedback(null); }}
+              className="border-2 border-stone-200 text-stone-500 hover:border-stone-300 font-bold px-5 py-2.5 rounded-xl text-sm transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -125,6 +290,8 @@ export default function AdminBookingsPage() {
         </p>
         <h1 className="text-3xl font-black text-stone-800">Bookings</h1>
       </div>
+
+      <AddBookingPanel onAdded={() => fetchBookings(statusFilter)} />
 
       {/* Summary bar */}
       {summary && (
