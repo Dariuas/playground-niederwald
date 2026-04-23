@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, addHoursToTime } from "@/lib/supabase";
 import { pavilions } from "@/data/pavilions";
-import { requireAuth } from "@/lib/adminAuth";
-import { randomUUID } from "crypto";
+import { isAuthenticated } from "@/lib/adminAuth";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -51,7 +50,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  await requireAuth();
+  if (!(await isAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
 
   const body = await req.json();
   const { pavilionId, date, startTime, durationHours, guestName, guestEmail, guestPhone, notes, totalCents } = body;
@@ -65,8 +66,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid pavilion." }, { status: 400 });
   }
 
-  const endTime = addHoursToTime(startTime, durationHours);
-  const reservationId = `ADMIN-${randomUUID().slice(0, 8).toUpperCase()}`;
+  const dur = Number(durationHours);
+  const endTime = addHoursToTime(startTime, dur);
+  const now = new Date().toISOString();
+  const reservationId = `ADMIN-${Date.now().toString(36).toUpperCase()}`;
 
   const supabase = getSupabaseAdmin();
 
@@ -87,27 +90,32 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase
     .from("pavilion_bookings")
     .insert({
-      reservation_id:   reservationId,
-      pavilion_id:      pavilionId,
-      pavilion_name:    pavilion.name,
+      reservation_id:    reservationId,
+      pavilion_id:       pavilionId,
+      pavilion_name:     pavilion.name,
       date,
-      start_time:       startTime,
-      end_time:         endTime,
-      duration_hours:   durationHours,
-      guest_name:       guestName,
-      guest_email:      guestEmail ?? "",
-      guest_phone:      guestPhone ?? null,
-      total_cents:      totalCents ?? 0,
-      status:           "confirmed",
+      start_time:        startTime,
+      end_time:          endTime,
+      duration_hours:    dur,
+      guest_name:        guestName,
+      guest_email:       guestEmail || "",
+      guest_phone:       guestPhone || null,
+      total_cents:       Number(totalCents) || 0,
+      status:            "confirmed",
       square_payment_id: null,
-      notes:            notes ?? null,
+      notes:             notes || null,
+      created_at:        now,
+      updated_at:        now,
     })
     .select()
     .single();
 
   if (error) {
     console.error("Manual booking insert error:", error);
-    return NextResponse.json({ error: "Failed to create booking." }, { status: 500 });
+    return NextResponse.json(
+      { error: `Failed to create booking: ${error.message}` },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ ok: true, booking: data, reservationId });

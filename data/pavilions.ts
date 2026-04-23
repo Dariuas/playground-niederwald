@@ -84,4 +84,18 @@ export const pavilions: Pavilion[] = [
     x: 53,
     y: 62,
   },
+  {
+    id: "pavilion-6",
+    number: 6,
+    name: "Playground Pavilion",
+    capacity: 80,
+    description:
+      "Our premium pavilion right next to the playground — the ultimate spot for birthday parties. Generous covered space for large groups with direct views of the fun.",
+    features: ["Picnic tables (x12)", "Premium covered structure", "Next to playground", "Largest capacity"],
+    firstHourPrice: 75,
+    additionalHourPrice: 50,
+    squareCatalogId: "",
+    x: 30,
+    y: 65,
+  },
 ];

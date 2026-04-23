@@ -174,17 +174,23 @@ export async function DELETE(
   const { id } = await params;
   const supabase = getSupabaseAdmin();
 
-  // Soft delete: set is_active = false
   const { data: product, error } = await supabase
     .from("products")
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Admin product soft-delete error:", error);
-    return NextResponse.json({ error: "Failed to deactivate product." }, { status: 500 });
+    return NextResponse.json(
+      { error: `Failed to deactivate product: ${error.message}` },
+      { status: 500 }
+    );
+  }
+
+  if (!product) {
+    return NextResponse.json({ error: "Product not found." }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true, product });

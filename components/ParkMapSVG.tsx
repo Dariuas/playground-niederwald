@@ -195,8 +195,7 @@ export default function ParkMapSVG() {
           fontWeight="700" fill="#3a2808">Playground</text>
       </g>
 
-      {/* ── Pavilion Structures P1–P5 ── */}
-      {/* Placed at exact same coordinates as pavilion data — React markers overlay these */}
+      {/* ── Pavilion Structures P1–P5 (standard size) ── */}
       {([
         [457, 352],
         [559, 352],
@@ -205,20 +204,56 @@ export default function ParkMapSVG() {
         [673, 590],
       ] as [number, number][]).map(([x, y], i) => (
         <g key={i} transform={`translate(${x},${y})`} filter="url(#sh2)">
-          {/* Base platform */}
           <rect x="-35" y="-26" width="70" height="52" rx="6" fill="#f5ede0"/>
-          {/* Teal roof band */}
           <rect x="-35" y="-26" width="70" height="13" rx="5" fill="#0d9488" opacity="0.88"/>
-          {/* Corner posts */}
           <rect x="-31" y="-14" width="6" height="36" rx="2" fill="#c4a87a"/>
           <rect x="25"  y="-14" width="6" height="36" rx="2" fill="#c4a87a"/>
-          {/* Picnic table top */}
           <rect x="-14" y="-5" width="28" height="12" rx="2" fill="#d4a060" opacity="0.9"/>
-          {/* Bench planks */}
           <rect x="-19" y="6"  width="38" height="4" rx="1" fill="#b88840" opacity="0.68"/>
           <rect x="-19" y="-14" width="38" height="4" rx="1" fill="#b88840" opacity="0.68"/>
         </g>
       ))}
+
+      {/* ── Pavilion 6 — Playground Pavilion (larger, premium) ── */}
+      <g transform="translate(381,619)" filter="url(#sh)">
+        {/* Shadow base */}
+        <rect x="-54" y="-36" width="108" height="72" rx="8" fill="#e8d8b8" opacity="0.6"/>
+        {/* Main platform */}
+        <rect x="-52" y="-34" width="104" height="68" rx="8" fill="#f8f0e0"/>
+        {/* Amber premium roof band */}
+        <rect x="-52" y="-34" width="104" height="16" rx="7" fill="#d97706" opacity="0.92"/>
+        {/* Roof ridge line */}
+        <rect x="-52" y="-22" width="104" height="3" fill="#b45309" opacity="0.5"/>
+        {/* Corner posts (4) */}
+        <rect x="-46" y="-20" width="7" height="50" rx="2" fill="#c4a87a"/>
+        <rect x="39"  y="-20" width="7" height="50" rx="2" fill="#c4a87a"/>
+        {/* Picnic tables x2 */}
+        <rect x="-38" y="-8" width="32" height="12" rx="2" fill="#d4a060" opacity="0.9"/>
+        <rect x="6"   y="-8" width="32" height="12" rx="2" fill="#d4a060" opacity="0.9"/>
+        {/* Benches */}
+        <rect x="-42" y="3"  width="40" height="4" rx="1" fill="#b88840" opacity="0.65"/>
+        <rect x="2"   y="3"  width="40" height="4" rx="1" fill="#b88840" opacity="0.65"/>
+        <rect x="-42" y="-16" width="40" height="4" rx="1" fill="#b88840" opacity="0.65"/>
+        <rect x="2"   y="-16" width="40" height="4" rx="1" fill="#b88840" opacity="0.65"/>
+        {/* Star badge — premium marker */}
+        <circle cx="0" cy="26" r="8" fill="#fbbf24" opacity="0.9"/>
+        <text x="0" y="30" textAnchor="middle" fontSize="10" fontFamily="sans-serif" fontWeight="900" fill="#78350f">★</text>
+      </g>
+
+      {/* ── Gel Blaster Range ── */}
+      <g transform="translate(870,510)" filter="url(#sh2)">
+        <rect x="-45" y="-30" width="90" height="60" rx="8" fill="#dcfce7" opacity="0.85"/>
+        <rect x="-45" y="-30" width="90" height="14" rx="7" fill="#16a34a" opacity="0.8"/>
+        {/* Target circles */}
+        <circle cx="-20" cy="10" r="12" fill="none" stroke="#dc2626" strokeWidth="2.5" opacity="0.7"/>
+        <circle cx="-20" cy="10" r="7"  fill="none" stroke="#dc2626" strokeWidth="2" opacity="0.7"/>
+        <circle cx="-20" cy="10" r="3"  fill="#dc2626" opacity="0.8"/>
+        <circle cx="20"  cy="10" r="12" fill="none" stroke="#dc2626" strokeWidth="2.5" opacity="0.7"/>
+        <circle cx="20"  cy="10" r="7"  fill="none" stroke="#dc2626" strokeWidth="2" opacity="0.7"/>
+        <circle cx="20"  cy="10" r="3"  fill="#dc2626" opacity="0.8"/>
+        <text x="0" y="46" textAnchor="middle" fontSize="11" fontFamily="sans-serif"
+          fontWeight="700" fill="#14532d">Gel Blasters</text>
+      </g>
 
       {/* ── Branding badge ── */}
       <g transform="translate(1192,900)">

@@ -13,6 +13,7 @@ const landmarks = [
   { label: "💎 Gem Mining",       x: 75, y: 63 },
   { label: "🍺 Bar",              x: 15, y: 50 },
   { label: "🎠 Playground",       x: 44, y: 54 },
+  { label: "🎯 Gel Blasters",     x: 68, y: 54 },
   { label: "🚪 Entrance",         x: 42, y: 83 },
 ];
 

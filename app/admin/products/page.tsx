@@ -596,8 +596,11 @@ export default function AdminProductsPage() {
       const data = await res.json();
       if (data.ok && data.product) {
         handleUpdate(data.product);
+      } else {
+        alert(data.error ?? "Failed to remove product.");
       }
     } catch (err) {
+      alert("Network error — could not remove product.");
       console.error("Deactivate failed:", err);
     }
   }
