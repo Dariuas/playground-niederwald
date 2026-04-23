@@ -20,7 +20,7 @@ export async function isAuthenticated(): Promise<boolean> {
 
 /** Call in server components / route handlers — redirects if not authed. */
 export async function requireAuth() {
-  if (!(await isAuthenticated())) redirect("/admin/login");
+  if (!(await isAuthenticated())) redirect("/admin-login");
 }
 
 export { COOKIE };
