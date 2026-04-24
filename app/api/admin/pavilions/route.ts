@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { isAuthenticated } from "@/lib/adminAuth";
 import { pavilions } from "@/data/pavilions";
 
 const DEFAULT_FIRST_HOUR = 3500;
 const DEFAULT_ADD_HOUR = 1500;
 
 export async function GET() {
+  if (!(await isAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
   const supabase = getSupabaseAdmin();
 
   const { data: configs, error } = await supabase

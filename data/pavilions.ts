@@ -1,3 +1,17 @@
+export interface DayPricing {
+  firstHour: number;
+  addHour: number;
+}
+
+export interface PavilionSchedule {
+  /** Days of week open: 0=Sun, 1=Mon … 6=Sat */
+  availableDays: number[];
+  openTime: string;   // "HH:MM" 24h
+  closeTime: string;  // "HH:MM" 24h
+  /** Per-day price overrides — key is day number. Omit day to use default pricing. */
+  dayPricing: Record<number, DayPricing>;
+}
+
 export interface Pavilion {
   id: string;
   number: number;
@@ -5,13 +19,28 @@ export interface Pavilion {
   capacity: number;
   description: string;
   features: string[];
+  /** Default first-hour price in dollars */
   firstHourPrice: number;
+  /** Default additional-hour price in dollars */
   additionalHourPrice: number;
-  squareCatalogId: string; // paste from Square Dashboard → Catalog
+  squareCatalogId: string;
+  schedule: PavilionSchedule;
   /** Position as % of map image width/height for overlay marker */
   x: number;
   y: number;
 }
+
+// Mon–Wed free, Thu–Sat paid. Closed Sun.
+const defaultSchedule: PavilionSchedule = {
+  availableDays: [1, 2, 3, 4, 5, 6],
+  openTime:  "09:00",
+  closeTime: "21:00",
+  dayPricing: {
+    1: { firstHour: 0,  addHour: 0  },
+    2: { firstHour: 0,  addHour: 0  },
+    3: { firstHour: 0,  addHour: 0  },
+  },
+};
 
 export const pavilions: Pavilion[] = [
   {
@@ -25,8 +54,9 @@ export const pavilions: Pavilion[] = [
     firstHourPrice: 30,
     additionalHourPrice: 20,
     squareCatalogId: "",
-    x: 36,
-    y: 37,
+    schedule: { ...defaultSchedule },
+    x: 37,
+    y: 43,
   },
   {
     id: "pavilion-2",
@@ -39,8 +69,9 @@ export const pavilions: Pavilion[] = [
     firstHourPrice: 30,
     additionalHourPrice: 20,
     squareCatalogId: "",
+    schedule: { ...defaultSchedule },
     x: 44,
-    y: 37,
+    y: 43,
   },
   {
     id: "pavilion-3",
@@ -53,8 +84,9 @@ export const pavilions: Pavilion[] = [
     firstHourPrice: 30,
     additionalHourPrice: 20,
     squareCatalogId: "",
+    schedule: { ...defaultSchedule },
     x: 61,
-    y: 42,
+    y: 41,
   },
   {
     id: "pavilion-4",
@@ -67,8 +99,9 @@ export const pavilions: Pavilion[] = [
     firstHourPrice: 30,
     additionalHourPrice: 20,
     squareCatalogId: "",
-    x: 61,
-    y: 52,
+    schedule: { ...defaultSchedule },
+    x: 59,
+    y: 53,
   },
   {
     id: "pavilion-5",
@@ -81,8 +114,9 @@ export const pavilions: Pavilion[] = [
     firstHourPrice: 30,
     additionalHourPrice: 20,
     squareCatalogId: "",
-    x: 53,
-    y: 62,
+    schedule: { ...defaultSchedule },
+    x: 57,
+    y: 63,
   },
   {
     id: "pavilion-6",
@@ -95,7 +129,17 @@ export const pavilions: Pavilion[] = [
     firstHourPrice: 75,
     additionalHourPrice: 50,
     squareCatalogId: "",
+    schedule: {
+      availableDays: [1, 2, 3, 4, 5, 6],
+      openTime:  "09:00",
+      closeTime: "21:00",
+      dayPricing: {
+        1: { firstHour: 0, addHour: 0 },
+        2: { firstHour: 0, addHour: 0 },
+        3: { firstHour: 0, addHour: 0 },
+      },
+    },
     x: 30,
-    y: 65,
+    y: 56,
   },
 ];

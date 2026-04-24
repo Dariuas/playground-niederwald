@@ -20,6 +20,20 @@ export async function POST(req: NextRequest) {
   if (!squareToken) {
     return NextResponse.json({ error: "Payment token required." }, { status: 400 });
   }
+  if (typeof duration !== "number" || duration < 1 || duration > 12) {
+    return NextResponse.json({ error: "Duration must be between 1 and 12 hours." }, { status: 400 });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+  }
+  const bookingDate = new Date(date + "T12:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const sixMonthsOut = new Date(today);
+  sixMonthsOut.setMonth(sixMonthsOut.getMonth() + 6);
+  if (isNaN(bookingDate.getTime()) || bookingDate < today || bookingDate > sixMonthsOut) {
+    return NextResponse.json({ error: "Invalid booking date." }, { status: 400 });
+  }
 
   const endTime = addHoursToTime(time, duration);
   const supabase = getSupabaseAdmin();

@@ -1,3 +1,12 @@
+function esc(text: string): string {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function shell(content: string) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -72,14 +81,14 @@ export function orderConfirmationEmail(opts: {
   qrDataUrl: string;
 }) {
   const itemRows = opts.items
-    .map((i) => `${i.name} ×${i.quantity} — $${(i.price * i.quantity).toFixed(2)}`)
+    .map((i) => `${esc(i.name)} ×${i.quantity} — $${(i.price * i.quantity).toFixed(2)}`)
     .join("<br>");
 
   const content = `
     ${h2("Yeehaw! You're all set. 🤠")}
-    ${p(`Hey <strong>${opts.customerName}</strong>, your order is confirmed. See y'all at the park!`)}
+    ${p(`Hey <strong>${esc(opts.customerName)}</strong>, your order is confirmed. See y'all at the park!`)}
     ${infoTable([
-      ["Order", opts.orderNumber],
+      ["Order", esc(opts.orderNumber)],
       ["Items", itemRows],
       ["Subtotal", `$${opts.totalPrice.toFixed(2)}`],
       ["Tax (8%)", `$${opts.tax.toFixed(2)}`],
@@ -113,19 +122,19 @@ export function orderNotificationEmail(opts: {
   paymentId: string;
 }) {
   const itemRows: [string, string][] = opts.items.map((i) => [
-    i.name,
+    esc(i.name),
     `×${i.quantity} — $${(i.price * i.quantity).toFixed(2)}`,
   ]);
 
   const content = `
     ${h2("New Order Received 🎟️")}
     ${infoTable([
-      ["Order #", opts.orderNumber],
-      ["Customer", opts.customerName],
-      ["Email", opts.customerEmail],
+      ["Order #", esc(opts.orderNumber)],
+      ["Customer", esc(opts.customerName)],
+      ["Email", esc(opts.customerEmail)],
       ...itemRows,
       ["Total", `$${opts.grandTotal.toFixed(2)}`],
-      ["Square ID", opts.paymentId],
+      ["Square ID", esc(opts.paymentId)],
     ])}
   `;
   return shell(content);
@@ -146,12 +155,12 @@ export function pavilionConfirmationEmail(opts: {
 }) {
   const content = `
     ${h2("Pavilion Reserved! 🏡")}
-    ${p(`Hey <strong>${opts.customerName}</strong>, your pavilion reservation request has been received. We'll confirm your booking within 24 hours.`)}
+    ${p(`Hey <strong>${esc(opts.customerName)}</strong>, your pavilion reservation request has been received. We'll confirm your booking within 24 hours.`)}
     ${infoTable([
-      ["Reservation ID", opts.reservationId],
-      ["Pavilion", opts.pavilionName],
-      ["Date", opts.date],
-      ["Start Time", opts.time],
+      ["Reservation ID", esc(opts.reservationId)],
+      ["Pavilion", esc(opts.pavilionName)],
+      ["Date", esc(opts.date)],
+      ["Start Time", esc(opts.time)],
       ["Duration", `${opts.duration} hr${opts.duration !== 1 ? "s" : ""}`],
       ["Estimated Total", `$${opts.total}`],
     ])}
@@ -181,15 +190,15 @@ export function pavilionNotificationEmail(opts: {
   const content = `
     ${h2("New Pavilion Reservation Request 🏡")}
     ${infoTable([
-      ["Reservation ID", opts.reservationId],
-      ["Pavilion", opts.pavilionName],
-      ["Date", opts.date],
-      ["Time", opts.time],
+      ["Reservation ID", esc(opts.reservationId)],
+      ["Pavilion", esc(opts.pavilionName)],
+      ["Date", esc(opts.date)],
+      ["Time", esc(opts.time)],
       ["Duration", `${opts.duration} hr${opts.duration !== 1 ? "s" : ""}`],
       ["Estimated", `$${opts.total}`],
-      ["Customer", opts.customerName],
-      ["Email", opts.customerEmail],
-      ["Phone", opts.customerPhone || "—"],
+      ["Customer", esc(opts.customerName)],
+      ["Email", esc(opts.customerEmail)],
+      ["Phone", esc(opts.customerPhone || "—")],
     ])}
   `;
   return shell(content);
@@ -208,16 +217,16 @@ export function contactNotificationEmail(opts: {
   const content = `
     ${h2("New Contact Form Submission 📬")}
     ${infoTable([
-      ["From", opts.name],
-      ["Email", opts.email],
-      ["Phone", opts.phone || "—"],
-      ["Subject", opts.subject],
+      ["From", esc(opts.name)],
+      ["Email", esc(opts.email)],
+      ["Phone", esc(opts.phone || "—")],
+      ["Subject", esc(opts.subject)],
     ])}
     <div style="background:#f9fafb;border:2px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin:16px 0;">
       <p style="font-size:12px;font-weight:bold;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Message</p>
-      <p style="font-size:14px;color:#1c1917;margin:0;line-height:1.6;white-space:pre-wrap;">${opts.message}</p>
+      <p style="font-size:14px;color:#1c1917;margin:0;line-height:1.6;white-space:pre-wrap;">${esc(opts.message)}</p>
     </div>
-    <p style="font-size:12px;color:#9ca3af;margin:0;">Reply directly to this email to respond to ${opts.name}.</p>
+    <p style="font-size:12px;color:#9ca3af;margin:0;">Reply directly to this email to respond to ${esc(opts.name)}.</p>
   `;
   return shell(content);
 }
@@ -227,9 +236,9 @@ export function contactNotificationEmail(opts: {
 // ─────────────────────────────────────────────────────────────
 export function contactAutoReplyEmail(opts: { name: string; subject: string }) {
   const content = `
-    ${h2(`Hey ${opts.name}! 👋`)}
+    ${h2(`Hey ${esc(opts.name)}! 👋`)}
     ${p("Thanks for reaching out — we got your message and will holler back real soon.")}
-    ${infoTable([["Topic", opts.subject]])}
+    ${infoTable([["Topic", esc(opts.subject)]])}
     ${divider()}
     ${p("In the meantime, feel free to give us a call:", "#6b7280")}
     <p style="text-align:center;font-size:22px;font-weight:900;color:#0f766e;margin:0 0 24px;">

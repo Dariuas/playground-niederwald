@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { isAuthenticated } from "@/lib/adminAuth";
 
 const SQUARE_API_URL = "https://connect.squareup.com/v2/catalog/object";
 const SQUARE_VERSION = "2024-10-17";
@@ -14,6 +15,9 @@ function squareHeaders() {
 }
 
 export async function GET() {
+  if (!(await isAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
   const supabase = getSupabaseAdmin();
 
   const { data: products, error } = await supabase
@@ -31,6 +35,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await isAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
   const body = await req.json();
   const { name, description, priceCents, category } = body as {
     name: string;

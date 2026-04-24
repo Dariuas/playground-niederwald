@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { isAuthenticated } from "@/lib/adminAuth";
 
 const SQUARE_API_URL = "https://connect.squareup.com/v2/catalog/object";
 const SQUARE_VERSION = "2024-10-17";
@@ -17,6 +18,9 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await isAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
   const { id } = await params;
   const supabase = getSupabaseAdmin();
 
