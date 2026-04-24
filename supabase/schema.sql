@@ -49,8 +49,12 @@ CREATE TABLE IF NOT EXISTS pavilion_configs (
   first_hour_price_cents   INTEGER NOT NULL DEFAULT 3500,
   add_hour_price_cents     INTEGER NOT NULL DEFAULT 1500,
   is_active                BOOLEAN NOT NULL DEFAULT true,
+  capacity                 INTEGER,              -- NULL = use static default from data/pavilions.ts
   updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Migration: add capacity column if upgrading from an older schema
+ALTER TABLE pavilion_configs ADD COLUMN IF NOT EXISTS capacity INTEGER;
 
 -- Seed default configs
 INSERT INTO pavilion_configs (pavilion_id, first_hour_price_cents, add_hour_price_cents)

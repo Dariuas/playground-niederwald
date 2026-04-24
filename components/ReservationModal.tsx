@@ -17,8 +17,9 @@ type Step       = "schedule" | "details" | "payment" | "confirmed";
 type AvailState = "idle" | "checking" | "available" | "conflict" | "error";
 
 function toMinDate() {
-  const d = new Date(); d.setDate(d.getDate() + 1);
-  return d.toISOString().split("T")[0];
+  const earliest = new Date("2026-05-23");
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  return (tomorrow > earliest ? tomorrow : earliest).toISOString().split("T")[0];
 }
 function toMaxDate() {
   const d = new Date(); d.setMonth(d.getMonth() + 6);

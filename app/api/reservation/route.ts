@@ -31,8 +31,10 @@ export async function POST(req: NextRequest) {
   today.setHours(0, 0, 0, 0);
   const sixMonthsOut = new Date(today);
   sixMonthsOut.setMonth(sixMonthsOut.getMonth() + 6);
-  if (isNaN(bookingDate.getTime()) || bookingDate < today || bookingDate > sixMonthsOut) {
-    return NextResponse.json({ error: "Invalid booking date." }, { status: 400 });
+  const openingDay = new Date("2026-05-23T00:00:00");
+  const minAllowed = today > openingDay ? today : openingDay;
+  if (isNaN(bookingDate.getTime()) || bookingDate < minAllowed || bookingDate > sixMonthsOut) {
+    return NextResponse.json({ error: "Reservations are not available before May 23rd." }, { status: 400 });
   }
 
   const endTime = addHoursToTime(time, duration);

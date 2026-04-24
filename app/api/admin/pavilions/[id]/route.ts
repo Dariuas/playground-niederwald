@@ -7,10 +7,11 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const { firstHourPriceCents, addHourPriceCents, isActive } = body as {
+  const { firstHourPriceCents, addHourPriceCents, isActive, capacity } = body as {
     firstHourPriceCents?: number;
     addHourPriceCents?: number;
     isActive?: boolean;
+    capacity?: number;
   };
 
   const supabase = getSupabaseAdmin();
@@ -29,6 +30,9 @@ export async function PATCH(
   }
   if (isActive !== undefined) {
     upsertData.is_active = isActive;
+  }
+  if (capacity !== undefined) {
+    upsertData.capacity = capacity;
   }
 
   const { data, error } = await supabase

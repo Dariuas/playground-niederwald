@@ -10,7 +10,7 @@ export async function GET() {
     const supabase = getSupabaseAdmin();
     const { data: configs } = await supabase
       .from("pavilion_configs")
-      .select("pavilion_id, first_hour_price_cents, add_hour_price_cents, is_active");
+      .select("pavilion_id, first_hour_price_cents, add_hour_price_cents, is_active, capacity");
 
     const configMap = new Map((configs ?? []).map((c) => [c.pavilion_id, c]));
 
@@ -21,6 +21,7 @@ export async function GET() {
         firstHourPrice:      (db?.first_hour_price_cents ?? DEFAULT_FIRST_HOUR) / 100,
         additionalHourPrice: (db?.add_hour_price_cents   ?? DEFAULT_ADD_HOUR)   / 100,
         isActive:            db?.is_active ?? true,
+        capacity:            db?.capacity  ?? p.capacity,
       };
     });
 

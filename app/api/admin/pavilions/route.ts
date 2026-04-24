@@ -30,7 +30,7 @@ export async function GET() {
     return {
       pavilionId: p.id,
       name: p.name,
-      capacity: p.capacity,
+      capacity: dbRow?.capacity ?? p.capacity,
       firstHourPriceCents: dbRow?.first_hour_price_cents ?? DEFAULT_FIRST_HOUR,
       addHourPriceCents: dbRow?.add_hour_price_cents ?? DEFAULT_ADD_HOUR,
       isActive: dbRow?.is_active ?? true,

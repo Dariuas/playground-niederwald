@@ -121,7 +121,7 @@ export const pavilions: Pavilion[] = [
   {
     id: "pavilion-6",
     number: 6,
-    name: "Playground Pavilion",
+    name: "Games Pavilion",
     capacity: 80,
     description:
       "Our premium pavilion right next to the playground — the ultimate spot for birthday parties. Generous covered space for large groups with direct views of the fun.",

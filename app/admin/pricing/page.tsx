@@ -16,6 +16,7 @@ type EditState = {
   firstHour: string;
   addHour: string;
   isActive: boolean;
+  capacity: string;
 };
 
 function centsToDisplay(cents: number): string {
@@ -53,6 +54,7 @@ export default function AdminPricingPage() {
             firstHour: centsToDisplay(p.firstHourPriceCents),
             addHour: centsToDisplay(p.addHourPriceCents),
             isActive: p.isActive,
+            capacity: String(p.capacity),
           };
         }
         setEdits(initial);
@@ -84,6 +86,7 @@ export default function AdminPricingPage() {
 
     setSaving((prev) => ({ ...prev, [pavilionId]: true }));
     try {
+      const capacityNum = parseInt(edit.capacity, 10);
       const res = await fetch(`/api/admin/pavilions/${pavilionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -91,6 +94,7 @@ export default function AdminPricingPage() {
           firstHourPriceCents: displayToCents(edit.firstHour),
           addHourPriceCents: displayToCents(edit.addHour),
           isActive: edit.isActive,
+          ...(isNaN(capacityNum) ? {} : { capacity: capacityNum }),
         }),
       });
       if (!res.ok) throw new Error("Save failed.");
@@ -104,6 +108,7 @@ export default function AdminPricingPage() {
                 firstHourPriceCents: displayToCents(edit.firstHour),
                 addHourPriceCents: displayToCents(edit.addHour),
                 isActive: edit.isActive,
+                capacity: isNaN(capacityNum) ? p.capacity : capacityNum,
               }
             : p
         )
@@ -167,8 +172,18 @@ export default function AdminPricingPage() {
                   </div>
 
                   {/* Capacity */}
-                  <div>
-                    <span className="text-stone-600 font-semibold">{pav.capacity} guests</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={edit.capacity}
+                      onChange={(e) =>
+                        handleChange(pav.pavilionId, "capacity", e.target.value)
+                      }
+                      className="w-20 px-3 py-2 border-2 border-stone-200 rounded-xl text-sm font-bold text-stone-700 focus:outline-none focus:border-teal-500 transition-colors"
+                    />
+                    <span className="text-xs text-stone-400">guests</span>
                   </div>
 
                   {/* First hour price */}
