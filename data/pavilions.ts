@@ -139,7 +139,7 @@ export const pavilions: Pavilion[] = [
         3: { firstHour: 0, addHour: 0 },
       },
     },
-    x: 30,
-    y: 56,
+    x: 77,
+    y: 41,
   },
 ];

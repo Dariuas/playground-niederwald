@@ -22,7 +22,7 @@ type ApiPavilion = {
 const landmarks = [
   { label: "🔥 Fire Pit",         x: 42, y: 24 },
   { label: "🚂 Train Station",    x: 70, y: 20 },
-  { label: "🎮 Games Pavilion",   x: 77, y: 41 },
+  { label: "🎮 Games",             x: 77, y: 41 },
   { label: "💎 Gem Mining",       x: 75, y: 63 },
   { label: "🍺 Bar",              x: 15, y: 50 },
   { label: "🎠 Playground",       x: 44, y: 54 },

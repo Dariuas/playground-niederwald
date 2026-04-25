@@ -214,32 +214,6 @@ export default function ParkMapSVG() {
         </g>
       ))}
 
-      {/* ── Pavilion 6 — Playground Pavilion (larger, premium) ── */}
-      <g transform="translate(381,619)" filter="url(#sh)">
-        {/* Shadow base */}
-        <rect x="-54" y="-36" width="108" height="72" rx="8" fill="#e8d8b8" opacity="0.6"/>
-        {/* Main platform */}
-        <rect x="-52" y="-34" width="104" height="68" rx="8" fill="#f8f0e0"/>
-        {/* Amber premium roof band */}
-        <rect x="-52" y="-34" width="104" height="16" rx="7" fill="#d97706" opacity="0.92"/>
-        {/* Roof ridge line */}
-        <rect x="-52" y="-22" width="104" height="3" fill="#b45309" opacity="0.5"/>
-        {/* Corner posts (4) */}
-        <rect x="-46" y="-20" width="7" height="50" rx="2" fill="#c4a87a"/>
-        <rect x="39"  y="-20" width="7" height="50" rx="2" fill="#c4a87a"/>
-        {/* Picnic tables x2 */}
-        <rect x="-38" y="-8" width="32" height="12" rx="2" fill="#d4a060" opacity="0.9"/>
-        <rect x="6"   y="-8" width="32" height="12" rx="2" fill="#d4a060" opacity="0.9"/>
-        {/* Benches */}
-        <rect x="-42" y="3"  width="40" height="4" rx="1" fill="#b88840" opacity="0.65"/>
-        <rect x="2"   y="3"  width="40" height="4" rx="1" fill="#b88840" opacity="0.65"/>
-        <rect x="-42" y="-16" width="40" height="4" rx="1" fill="#b88840" opacity="0.65"/>
-        <rect x="2"   y="-16" width="40" height="4" rx="1" fill="#b88840" opacity="0.65"/>
-        {/* Star badge — premium marker */}
-        <circle cx="0" cy="26" r="8" fill="#fbbf24" opacity="0.9"/>
-        <text x="0" y="30" textAnchor="middle" fontSize="10" fontFamily="sans-serif" fontWeight="900" fill="#78350f">★</text>
-      </g>
-
       {/* ── Gel Blaster Range ── */}
       <g transform="translate(870,510)" filter="url(#sh2)">
         <rect x="-45" y="-30" width="90" height="60" rx="8" fill="#dcfce7" opacity="0.85"/>
