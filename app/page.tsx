@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import OpeningCountdown from "@/components/OpeningCountdown";
 
 const activities = [
   { icon: "🚂", label: "Train Rides", color: "bg-amber-50 border-amber-200", iconBg: "bg-amber-100", desc: "Classic open-air train that loops the whole property. Hop on as many times as you like." },
@@ -75,6 +76,8 @@ export default function HomePage() {
           ★ &nbsp; All The Fun In One Place &nbsp; ★ &nbsp; Niederwald, TX &nbsp; ★ &nbsp; Mon–Fri 9am–9pm &nbsp; ★ &nbsp; Grand Opening May 16th, 2026 &nbsp; ★
         </p>
       </div>
+
+      <OpeningCountdown />
 
       {/* ── Activities ── */}
       <section className="max-w-7xl mx-auto px-6 py-14">
