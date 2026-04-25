@@ -6,6 +6,19 @@ import { pavilions, Pavilion } from "@/data/pavilions";
 import ReservationModal from "./ReservationModal";
 import ParkMapSVG from "./ParkMapSVG";
 
+type ApiPavilion = {
+  id: string;
+  name: string;
+  description: string;
+  features: string[];
+  firstHourPrice: number;
+  additionalHourPrice: number;
+  isActive: boolean;
+  capacity: number;
+  mapX: number | null;
+  mapY: number | null;
+};
+
 const landmarks = [
   { label: "🔥 Fire Pit",         x: 42, y: 24 },
   { label: "🚂 Train Station",    x: 70, y: 20 },
@@ -23,19 +36,39 @@ export default function PavilionMap() {
   const [activeIds, setActiveIds] = useState<Set<string>>(
     new Set(pavilions.map((p) => p.id)) // optimistic: all active until API says otherwise
   );
+  // Overrides fetched from the API (name, description, features, map position)
+  const [apiData, setApiData] = useState<Map<string, ApiPavilion>>(new Map());
 
   useEffect(() => {
     fetch("/api/pavilions")
       .then((r) => r.json())
-      .then((list: { id: string; isActive: boolean }[]) => {
+      .then((list: ApiPavilion[]) => {
         setActiveIds(new Set(list.filter((p) => p.isActive).map((p) => p.id)));
+        setApiData(new Map(list.map((p) => [p.id, p])));
       })
       .catch(() => {/* keep optimistic default */});
   }, []);
 
+  // Merge static pavilion data with API overrides for display
+  function getMergedPavilion(p: Pavilion): Pavilion & { effectiveX: number; effectiveY: number } {
+    const api = apiData.get(p.id);
+    return {
+      ...p,
+      name:                api?.name        ?? p.name,
+      description:         api?.description ?? p.description,
+      features:            api?.features    ?? p.features,
+      firstHourPrice:      api?.firstHourPrice      ?? p.firstHourPrice,
+      additionalHourPrice: api?.additionalHourPrice  ?? p.additionalHourPrice,
+      capacity:            api?.capacity    ?? p.capacity,
+      effectiveX:          api?.mapX        ?? p.x,
+      effectiveY:          api?.mapY        ?? p.y,
+    };
+  }
+
   function handleSelect(p: Pavilion) {
     if (!activeIds.has(p.id)) return;
-    setSelected(p);
+    const merged = getMergedPavilion(p);
+    setSelected(merged);
   }
 
   return (
@@ -81,6 +114,7 @@ export default function PavilionMap() {
 
         {/* Pavilion markers */}
         {pavilions.map((p) => {
+          const merged     = getMergedPavilion(p);
           const isActive   = activeIds.has(p.id);
           const isHovered  = hovered === p.id;
           const isSelected = selected?.id === p.id;
@@ -91,10 +125,10 @@ export default function PavilionMap() {
               onClick={() => handleSelect(p)}
               onMouseEnter={() => setHovered(p.id)}
               onMouseLeave={() => setHovered(null)}
-              aria-label={isActive ? `Reserve ${p.name}` : `${p.name} — unavailable`}
+              aria-label={isActive ? `Reserve ${merged.name}` : `${merged.name} — unavailable`}
               disabled={!isActive}
               className="absolute focus:outline-none group disabled:cursor-not-allowed"
-              style={{ left: `${p.x}%`, top: `${p.y}%`, transform: "translate(-50%, -50%)" }}
+              style={{ left: `${merged.effectiveX}%`, top: `${merged.effectiveY}%`, transform: "translate(-50%, -50%)" }}
             >
               {(isHovered || isSelected) && isActive && (
                 <span className="absolute inset-0 -m-2 rounded-full bg-teal-400/30 animate-ping" />
@@ -117,10 +151,10 @@ export default function PavilionMap() {
               {isHovered && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 pointer-events-none">
                   <div className="bg-stone-900 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xl whitespace-nowrap text-center">
-                    <p>{p.name}</p>
+                    <p>{merged.name}</p>
                     {isActive ? (
                       <>
-                        <p className="text-amber-400 font-black">${p.firstHourPrice} first hr · ${p.additionalHourPrice}/hr after · up to {p.capacity} guests</p>
+                        <p className="text-amber-400 font-black">${merged.firstHourPrice} first hr · ${merged.additionalHourPrice}/hr after · up to {merged.capacity} guests</p>
                         <p className="text-stone-400 text-[10px] mt-0.5">Click to reserve</p>
                       </>
                     ) : (
@@ -138,6 +172,7 @@ export default function PavilionMap() {
       {/* Legend */}
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
         {pavilions.map((p) => {
+          const merged = getMergedPavilion(p);
           const isActive = activeIds.has(p.id);
           return (
             <button
@@ -156,9 +191,9 @@ export default function PavilionMap() {
                 {p.number}
               </span>
               <span className="text-left leading-tight">
-                Pavilion {p.number}<br />
+                {merged.name}<br />
                 {isActive
-                  ? <span className="text-stone-400 font-normal">From ${p.firstHourPrice}/hr</span>
+                  ? <span className="text-stone-400 font-normal">From ${merged.firstHourPrice}/hr</span>
                   : <span className="text-stone-400 font-normal italic">Unavailable</span>
                 }
               </span>

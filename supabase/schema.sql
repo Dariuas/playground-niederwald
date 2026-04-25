@@ -50,11 +50,21 @@ CREATE TABLE IF NOT EXISTS pavilion_configs (
   add_hour_price_cents     INTEGER NOT NULL DEFAULT 1500,
   is_active                BOOLEAN NOT NULL DEFAULT true,
   capacity                 INTEGER,              -- NULL = use static default from data/pavilions.ts
+  name_override            TEXT,                 -- NULL = use static default from data/pavilions.ts
+  description_override     TEXT,                 -- NULL = use static default
+  features_override        JSONB,                -- NULL = use static default; array of strings
+  map_x                    NUMERIC,              -- NULL = use static default (% of map width)
+  map_y                    NUMERIC,              -- NULL = use static default (% of map height)
   updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Migration: add capacity column if upgrading from an older schema
+-- Migration: add columns if upgrading from an older schema
 ALTER TABLE pavilion_configs ADD COLUMN IF NOT EXISTS capacity INTEGER;
+ALTER TABLE pavilion_configs ADD COLUMN IF NOT EXISTS name_override TEXT;
+ALTER TABLE pavilion_configs ADD COLUMN IF NOT EXISTS description_override TEXT;
+ALTER TABLE pavilion_configs ADD COLUMN IF NOT EXISTS features_override JSONB;
+ALTER TABLE pavilion_configs ADD COLUMN IF NOT EXISTS map_x NUMERIC;
+ALTER TABLE pavilion_configs ADD COLUMN IF NOT EXISTS map_y NUMERIC;
 
 -- Seed default configs
 INSERT INTO pavilion_configs (pavilion_id, first_hour_price_cents, add_hour_price_cents)
@@ -112,3 +122,14 @@ CREATE POLICY "public read active products"
 
 -- Service role bypasses RLS — API routes use service role key
 -- (No additional policies needed for server-side operations)
+
+
+-- Site-wide configuration key/value store (used for announcements, etc.)
+CREATE TABLE IF NOT EXISTS site_config (
+  key        TEXT        PRIMARY KEY,
+  value      TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE site_config ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read site_config"
+  ON site_config FOR SELECT USING (true);

@@ -29,12 +29,24 @@ export async function GET() {
     const dbRow = configMap.get(p.id);
     return {
       pavilionId: p.id,
-      name: p.name,
+      name: dbRow?.name_override ?? p.name,
       capacity: dbRow?.capacity ?? p.capacity,
       firstHourPriceCents: dbRow?.first_hour_price_cents ?? DEFAULT_FIRST_HOUR,
       addHourPriceCents: dbRow?.add_hour_price_cents ?? DEFAULT_ADD_HOUR,
       isActive: dbRow?.is_active ?? true,
       updatedAt: dbRow?.updated_at ?? null,
+      // Map/content overrides
+      nameOverride: dbRow?.name_override ?? null,
+      descriptionOverride: dbRow?.description_override ?? null,
+      featuresOverride: dbRow?.features_override ?? null,
+      mapX: dbRow?.map_x ?? null,
+      mapY: dbRow?.map_y ?? null,
+      // Static defaults (for display in admin)
+      defaultName: p.name,
+      defaultDescription: p.description,
+      defaultFeatures: p.features,
+      defaultMapX: p.x,
+      defaultMapY: p.y,
     };
   });
 

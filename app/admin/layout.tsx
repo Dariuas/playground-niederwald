@@ -2,11 +2,13 @@ import { requireAuth } from "@/lib/adminAuth";
 import Link from "next/link";
 
 const navItems = [
-  { href: "/admin",          label: "Dashboard", icon: "▦"  },
-  { href: "/admin/bookings", label: "Bookings",  icon: "📅" },
-  { href: "/admin/schedule", label: "Schedule",  icon: "🗓" },
-  { href: "/admin/pricing",  label: "Pricing",   icon: "💲" },
-  { href: "/admin/products", label: "Products",  icon: "🏷" },
+  { href: "/admin",           label: "Dashboard",      icon: "▦"  },
+  { href: "/admin/bookings",  label: "Bookings",       icon: "📅" },
+  { href: "/admin/schedule",  label: "Schedule",       icon: "🗓" },
+  { href: "/admin/pricing",   label: "Pricing",        icon: "💲" },
+  { href: "/admin/products",  label: "Products",       icon: "🏷" },
+  { href: "/admin/pavilions", label: "Map & Pavilions", icon: "🗺" },
+  { href: "/admin/content",   label: "Content",        icon: "📢" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
