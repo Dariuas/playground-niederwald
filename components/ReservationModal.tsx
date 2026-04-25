@@ -17,7 +17,7 @@ type Step       = "schedule" | "details" | "payment" | "confirmed";
 type AvailState = "idle" | "checking" | "available" | "conflict" | "error";
 
 function toMinDate() {
-  const earliest = new Date("2026-05-23");
+  const earliest = new Date("2026-05-16");
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
   return (tomorrow > earliest ? tomorrow : earliest).toISOString().split("T")[0];
 }
