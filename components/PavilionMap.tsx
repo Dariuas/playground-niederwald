@@ -94,16 +94,13 @@ export default function PavilionMap() {
       {/* Map */}
       <div
         className="relative w-full rounded-2xl overflow-hidden border-2 border-amber-100 shadow-lg select-none"
-        style={{ aspectRatio: "1024 / 1536" }}
+        style={{
+          aspectRatio: "1024 / 1536",
+          backgroundImage: "url('/images/park-map.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-        <Image
-          src="/images/park-map.png"
-          alt="Playground Niederwald park map"
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, 800px"
-          priority
-        />
 
         {/* Landmark labels */}
         {landmarks.map((lm) => (
