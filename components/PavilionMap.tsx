@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { pavilions, Pavilion } from "@/data/pavilions";
 import ReservationModal from "./ReservationModal";
-import ParkMapSVG from "./ParkMapSVG";
 
 type ApiPavilion = {
   id: string;
@@ -20,14 +19,14 @@ type ApiPavilion = {
 };
 
 const landmarks = [
-  { label: "🔥 Fire Pit",         x: 42, y: 24 },
-  { label: "🚂 Train Station",    x: 70, y: 20 },
-  { label: "🎮 Games",             x: 77, y: 41 },
-  { label: "💎 Gem Mining",       x: 75, y: 63 },
-  { label: "🍺 Bar",              x: 15, y: 50 },
-  { label: "🎠 Playground",       x: 44, y: 54 },
-  { label: "🎯 Gel Blasters",     x: 68, y: 54 },
-  { label: "🚪 Entrance",         x: 42, y: 83 },
+  { label: "🔥 Fire Pit",         x: 48, y: 24 },
+  { label: "🚂 Train Station",    x: 79, y: 13 },
+  { label: "🎪 Stage",            x: 17, y: 30 },
+  { label: "🍺 Bar",              x: 14, y: 60 },
+  { label: "🎠 Playground",       x: 38, y: 65 },
+  { label: "🦘 Jumping Pad",      x: 74, y: 56 },
+  { label: "💎 Gem Mining",       x: 73, y: 70 },
+  { label: "🚪 Entrance",         x: 43, y: 92 },
 ];
 
 export default function PavilionMap() {
@@ -95,9 +94,16 @@ export default function PavilionMap() {
       {/* Map */}
       <div
         className="relative w-full rounded-2xl overflow-hidden border-2 border-amber-100 shadow-lg select-none"
-        style={{ aspectRatio: "1270 / 952" }}
+        style={{ aspectRatio: "1024 / 1536" }}
       >
-        <ParkMapSVG />
+        <Image
+          src="/images/park-map.png"
+          alt="Playground Niederwald park map"
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 800px"
+          priority
+        />
 
         {/* Landmark labels */}
         {landmarks.map((lm) => (
