@@ -18,24 +18,11 @@ type ApiPavilion = {
   mapY: number | null;
 };
 
-const landmarks = [
-  { label: "🔥 Fire Pit",         x: 48, y: 24 },
-  { label: "🚂 Train Station",    x: 79, y: 13 },
-  { label: "🎪 Stage",            x: 17, y: 30 },
-  { label: "🍺 Bar",              x: 14, y: 60 },
-  { label: "🎠 Playground",       x: 38, y: 65 },
-  { label: "🦘 Jumping Pad",      x: 74, y: 56 },
-  { label: "💎 Gem Mining",       x: 73, y: 70 },
-  { label: "🚪 Entrance",         x: 43, y: 92 },
-];
-
 export default function PavilionMap() {
   const [selected, setSelected] = useState<Pavilion | null>(null);
-  const [hovered,  setHovered]  = useState<string | null>(null);
   const [activeIds, setActiveIds] = useState<Set<string>>(
-    new Set(pavilions.map((p) => p.id)) // optimistic: all active until API says otherwise
+    new Set(pavilions.map((p) => p.id)),
   );
-  // Overrides fetched from the API (name, description, features, map position)
   const [apiData, setApiData] = useState<Map<string, ApiPavilion>>(new Map());
 
   useEffect(() => {
@@ -48,8 +35,7 @@ export default function PavilionMap() {
       .catch(() => {/* keep optimistic default */});
   }, []);
 
-  // Merge static pavilion data with API overrides for display
-  function getMergedPavilion(p: Pavilion): Pavilion & { effectiveX: number; effectiveY: number } {
+  function getMerged(p: Pavilion): Pavilion {
     const api = apiData.get(p.id);
     return {
       ...p,
@@ -57,23 +43,20 @@ export default function PavilionMap() {
       description:         api?.description ?? p.description,
       features:            api?.features    ?? p.features,
       firstHourPrice:      api?.firstHourPrice      ?? p.firstHourPrice,
-      additionalHourPrice: api?.additionalHourPrice  ?? p.additionalHourPrice,
+      additionalHourPrice: api?.additionalHourPrice ?? p.additionalHourPrice,
       capacity:            api?.capacity    ?? p.capacity,
-      effectiveX:          api?.mapX        ?? p.x,
-      effectiveY:          api?.mapY        ?? p.y,
     };
   }
 
   function handleSelect(p: Pavilion) {
     if (!activeIds.has(p.id)) return;
-    const merged = getMergedPavilion(p);
-    setSelected(merged);
+    setSelected(getMerged(p));
   }
 
   return (
-    <div id="pavilions" className="scroll-mt-20">
-      {/* Pavilion photo */}
-      <div className="relative w-full h-56 sm:h-72 rounded-2xl overflow-hidden mb-6 shadow-md">
+    <div id="pavilions" className="scroll-mt-20 space-y-8">
+      {/* Hero photo */}
+      <div className="relative w-full h-56 sm:h-72 rounded-2xl overflow-hidden shadow-md">
         <Image
           src="/images/pavilion-photo.jpg"
           alt="The Playground @niederwald — shaded pavilions on the property"
@@ -86,123 +69,124 @@ export default function PavilionMap() {
           <p className="text-amber-400 text-xs uppercase tracking-widest font-bold mb-1">Reserve Your Spot</p>
           <h2 className="text-3xl font-black text-white drop-shadow-lg">Pavilion Reservations</h2>
           <p className="text-stone-200 text-sm mt-1">
-            Click any numbered pavilion on the map to see details and book your spot.
+            Pick the pavilion that fits your party — see the map below for layout.
           </p>
         </div>
       </div>
 
-      {/* Map */}
-      <div
-        className="relative w-full rounded-2xl overflow-hidden border-2 border-amber-100 shadow-lg select-none"
-        style={{
-          aspectRatio: "1024 / 1536",
-          backgroundImage: "url('/images/park-map.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
+      {/* Pavilion cards — the actual booking UI */}
+      <div>
+        <p className="text-teal-600 text-xs uppercase tracking-widest font-bold mb-1">Choose your pavilion</p>
+        <h3 className="text-2xl font-black text-stone-800 mb-4">Available Pavilions</h3>
 
-        {/* Landmark labels */}
-        {landmarks.map((lm) => (
-          <div
-            key={lm.label}
-            className="absolute pointer-events-none"
-            style={{ left: `${lm.x}%`, top: `${lm.y}%`, transform: "translate(-50%, -50%)" }}
-          >
-            <span className="bg-white/80 backdrop-blur-sm text-stone-700 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-white/60 whitespace-nowrap">
-              {lm.label}
-            </span>
-          </div>
-        ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {pavilions.map((p) => {
+            const merged   = getMerged(p);
+            const isActive = activeIds.has(p.id);
+            const isGames  = p.id === "pavilion-6";
 
-        {/* Pavilion markers */}
-        {pavilions.map((p) => {
-          const merged     = getMergedPavilion(p);
-          const isActive   = activeIds.has(p.id);
-          const isHovered  = hovered === p.id;
-          const isSelected = selected?.id === p.id;
-
-          return (
-            <button
-              key={p.id}
-              onClick={() => handleSelect(p)}
-              onMouseEnter={() => setHovered(p.id)}
-              onMouseLeave={() => setHovered(null)}
-              aria-label={isActive ? `Reserve ${merged.name}` : `${merged.name} — unavailable`}
-              disabled={!isActive}
-              className="absolute focus:outline-none group disabled:cursor-not-allowed"
-              style={{ left: `${merged.effectiveX}%`, top: `${merged.effectiveY}%`, transform: "translate(-50%, -50%)" }}
-            >
-              {(isHovered || isSelected) && isActive && (
-                <span className="absolute inset-0 -m-2 rounded-full bg-teal-400/30 animate-ping" />
-              )}
-
-              <span
-                className={`relative flex items-center justify-center rounded-full font-black text-sm shadow-lg border-2 transition-all duration-150 ${
+            return (
+              <div
+                key={p.id}
+                className={`relative rounded-2xl border-2 p-5 flex flex-col transition-all ${
                   !isActive
-                    ? "bg-stone-200 text-stone-400 border-stone-300 w-8 h-8 opacity-70"
-                    : isSelected
-                    ? "bg-teal-700 text-white border-white w-9 h-9 shadow-teal-400/40"
-                    : isHovered
-                    ? "bg-teal-600 text-white border-white w-9 h-9 shadow-teal-400/30"
-                    : "bg-white text-teal-700 border-teal-500 w-8 h-8"
+                    ? "bg-stone-50 border-stone-200 opacity-70"
+                    : isGames
+                    ? "bg-gradient-to-br from-amber-50 to-white border-amber-300 shadow-md hover:shadow-lg"
+                    : "bg-white border-amber-100 hover:border-teal-300 hover:shadow-md"
                 }`}
               >
-                {p.number}
-              </span>
+                {isGames && isActive && (
+                  <span className="absolute -top-2 -right-2 bg-amber-400 text-stone-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
+                    ★ Premium
+                  </span>
+                )}
 
-              {isHovered && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 pointer-events-none">
-                  <div className="bg-stone-900 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xl whitespace-nowrap text-center">
-                    <p>{merged.name}</p>
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg flex-shrink-0 ${
+                    !isActive
+                      ? "bg-stone-200 text-stone-400"
+                      : isGames
+                      ? "bg-amber-400 text-stone-900"
+                      : "bg-teal-700 text-white"
+                  }`}>
+                    {isGames ? "★" : p.number}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-base font-black text-stone-800 leading-tight">{merged.name}</h4>
+                    <p className="text-stone-400 text-xs font-semibold mt-0.5">
+                      Up to {merged.capacity} guests
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-stone-500 text-sm leading-relaxed mb-3 flex-1">
+                  {merged.description}
+                </p>
+
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {merged.features.map((f) => (
+                    <span key={f} className="bg-amber-50 border border-amber-200 text-stone-500 text-[11px] px-2 py-0.5 rounded-full">
+                      {f}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex items-end justify-between gap-3 pt-3 border-t border-amber-100">
+                  <div>
                     {isActive ? (
                       <>
-                        <p className="text-amber-400 font-black">${merged.firstHourPrice} first hr · ${merged.additionalHourPrice}/hr after · up to {merged.capacity} guests</p>
-                        <p className="text-stone-400 text-[10px] mt-0.5">Click to reserve</p>
+                        <p className="text-teal-700 font-black text-xl leading-none">
+                          ${merged.firstHourPrice}
+                          <span className="text-stone-400 text-xs font-semibold ml-1">first hr</span>
+                        </p>
+                        <p className="text-stone-400 text-xs mt-1">
+                          + ${merged.additionalHourPrice}/hr after
+                        </p>
                       </>
                     ) : (
-                      <p className="text-stone-400 text-[10px] mt-0.5">Currently unavailable</p>
+                      <p className="text-stone-400 text-sm font-semibold italic">Currently unavailable</p>
                     )}
                   </div>
-                  <div className="w-2 h-2 bg-stone-900 rotate-45 mx-auto -mt-1" />
+                  <button
+                    type="button"
+                    onClick={() => handleSelect(p)}
+                    disabled={!isActive}
+                    className={`font-black px-4 py-2 rounded-xl transition-colors uppercase text-xs tracking-widest whitespace-nowrap ${
+                      !isActive
+                        ? "bg-stone-200 text-stone-400 cursor-not-allowed"
+                        : isGames
+                        ? "bg-amber-500 hover:bg-amber-400 text-stone-900"
+                        : "bg-teal-700 hover:bg-teal-600 text-white"
+                    }`}
+                  >
+                    Reserve →
+                  </button>
                 </div>
-              )}
-            </button>
-          );
-        })}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Legend */}
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
-        {pavilions.map((p) => {
-          const merged = getMergedPavilion(p);
-          const isActive = activeIds.has(p.id);
-          return (
-            <button
-              key={p.id}
-              onClick={() => handleSelect(p)}
-              disabled={!isActive}
-              className={`flex items-center gap-2 border-2 px-3 py-2 rounded-xl transition-all text-xs font-bold ${
-                isActive
-                  ? "bg-white border-amber-100 hover:border-teal-400 hover:bg-teal-50 text-stone-700 hover:text-teal-700"
-                  : "bg-stone-50 border-stone-200 text-stone-400 cursor-not-allowed opacity-70"
-              }`}
-            >
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black flex-shrink-0 text-xs ${
-                isActive ? "bg-teal-700 text-white" : "bg-stone-300 text-stone-500"
-              }`}>
-                {p.number}
-              </span>
-              <span className="text-left leading-tight">
-                {merged.name}<br />
-                {isActive
-                  ? <span className="text-stone-400 font-normal">From ${merged.firstHourPrice}/hr</span>
-                  : <span className="text-stone-400 font-normal italic">Unavailable</span>
-                }
-              </span>
-            </button>
-          );
-        })}
+      {/* Park map — purely visual reference, no clickable markers */}
+      <div>
+        <p className="text-teal-600 text-xs uppercase tracking-widest font-bold mb-1">Park layout</p>
+        <h3 className="text-2xl font-black text-stone-800 mb-1">Where are the pavilions?</h3>
+        <p className="text-stone-500 text-sm mb-4">
+          Numbered boxes show pavilion locations on the property.
+        </p>
+        <div
+          className="relative w-full rounded-2xl overflow-hidden border-2 border-amber-100 shadow-lg"
+          style={{
+            aspectRatio: "1024 / 1536",
+            backgroundImage: "url('/images/park-map.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+          role="img"
+          aria-label="Park map showing the locations of pavilions, playground, train road, and other amenities"
+        />
       </div>
 
       {selected && (
