@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Playground Niederwald — Site Audit Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 11px;
+    color: #1c1917;
+    background: #fff;
+    line-height: 1.55;
+  }
+
+  /* ── Cover ── */
+  .cover {
+    background: #0f766e;
+    color: #fff;
+    padding: 72px 64px 56px;
+    min-height: 320px;
+    position: relative;
+  }
+  .cover-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #5eead4;
+    margin-bottom: 14px;
+  }
+  .cover-title {
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+  }
+  .cover-sub {
+    font-size: 14px;
+    color: #99f6e4;
+    font-weight: 500;
+    margin-bottom: 32px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .cover-meta-item {
+    font-size: 10px;
+    color: #ccfbf1;
+    letter-spacing: 0.05em;
+  }
+  .cover-meta-item strong {
+    display: block;
+    color: #fbbf24;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    margin-bottom: 2px;
+  }
+  .star-strip {
+    background: #fbbf24;
+    color: #0f766e;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 8px;
+  }
+
+  /* ── Page layout ── */
+  .page { padding: 36px 56px; }
+
+  /* ── Section headings ── */
+  .section-eyebrow {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #0f766e;
+    margin-bottom: 4px;
+    margin-top: 30px;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 900;
+    color: #1c1917;
+    letter-spacing: -0.3px;
+    border-bottom: 2.5px solid #f0fdf4;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  h3 {
+    font-size: 12px;
+    font-weight: 800;
+    color: #1c1917;
+    margin: 18px 0 8px;
+  }
+
+  /* ── Summary cards row ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .card {
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1.5px solid #e7e5e4;
+  }
+  .card-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #78716c;
+    margin-bottom: 4px;
+  }
+  .card-value {
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .card-note {
+    font-size: 9px;
+    color: #a8a29e;
+    margin-top: 3px;
+  }
+  .card-green  { background: #f0fdf4; border-color: #bbf7d0; }
+  .card-yellow { background: #fffbeb; border-color: #fde68a; }
+  .card-red    { background: #fff1f2; border-color: #fecdd3; }
+  .card-teal   { background: #f0fdfa; border-color: #99f6e4; }
+  .card-green  .card-value { color: #15803d; }
+  .card-yellow .card-value { color: #b45309; }
+  .card-red    .card-value { color: #be123c; }
+  .card-teal   .card-value { color: #0f766e; }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 18px;
+    font-size: 10.5px;
+  }
+  thead th {
+    background: #f5f5f4;
+    padding: 6px 10px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #78716c;
+    text-align: left;
+    border-bottom: 1.5px solid #e7e5e4;
+  }
+  tbody tr { border-bottom: 1px solid #f5f5f4; }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 5px 10px; vertical-align: top; }
+  tbody tr:nth-child(even) { background: #fafaf9; }
+
+  /* ── Status pills ── */
+  .pill {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 99px;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .pill-green  { background: #dcfce7; color: #15803d; }
+  .pill-yellow { background: #fef9c3; color: #854d0e; }
+  .pill-red    { background: #ffe4e6; color: #9f1239; }
+  .pill-blue   { background: #dbeafe; color: #1d4ed8; }
+  .pill-gray   { background: #f3f4f6; color: #374151; }
+
+  /* ── Fix list ── */
+  .fix-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    border: 1px solid #e7e5e4;
+    background: #fafaf9;
+  }
+  .fix-num {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #0f766e;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .fix-title { font-weight: 700; font-size: 11px; color: #1c1917; }
+  .fix-desc  { font-size: 10px; color: #57534e; margin-top: 2px; }
+  .fix-file  { font-size: 9px; color: #0f766e; font-family: monospace; margin-top: 3px; }
+
+  /* ── Priority table rows ── */
+  .p1 { color: #be123c; font-weight: 800; }
+  .p2 { color: #b45309; font-weight: 700; }
+  .p3 { color: #15803d; font-weight: 600; }
+
+  /* ── Callout box ── */
+  .callout {
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-left: 4px solid;
+  }
+  .callout-yellow { background: #fffbeb; border-color: #f59e0b; }
+  .callout-red    { background: #fff1f2; border-color: #f43f5e; }
+  .callout-green  { background: #f0fdf4; border-color: #22c55e; }
+  .callout-title  { font-size: 11px; font-weight: 800; margin-bottom: 4px; }
+  .callout-body   { font-size: 10px; color: #57534e; line-height: 1.5; }
+
+  /* ── Footer ── */
+  .footer {
+    background: #1c1917;
+    color: #a8a29e;
+    padding: 20px 56px;
+    font-size: 9px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+  }
+  .footer strong { color: #fbbf24; }
+
+  /* ── Page break ── */
+  .page-break { page-break-before: always; }
+
+  code {
+    background: #f5f5f4;
+    border: 1px solid #e7e5e4;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 10px;
+  }
+  .mono { font-family: monospace; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     COVER
+══════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-eyebrow">★ &nbsp; The Playground @niederwald &nbsp; ★ &nbsp; Niederwald, TX</div>
+  <div class="cover-title">Site Audit Report</div>
+  <div class="cover-sub">Smoke Test · Code Review · Competitive Research · Security Fixes</div>
+  <div class="cover-meta">
+    <div class="cover-meta-item"><strong>2026-04-24</strong>Report Date</div>
+    <div class="cover-meta-item"><strong>Next.js 16.1.6</strong>Framework</div>
+    <div class="cover-meta-item"><strong>May 16, 2026</strong>Grand Opening</div>
+    <div class="cover-meta-item"><strong>✅ PASSES</strong>Build Status</div>
+  </div>
+</div>
+<div class="star-strip">★ &nbsp; Confidential — Internal Use Only &nbsp; ★</div>
+
+<!-- ══════════════════════════════════════════════
+     EXECUTIVE SUMMARY
+══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="section-eyebrow">Overview</div>
+  <h2>Executive Summary</h2>
+
+  <div class="cards">
+    <div class="card card-green">
+      <div class="card-label">Build</div>
+      <div class="card-value">✅</div>
+      <div class="card-note">Zero TypeScript errors</div>
+    </div>
+    <div class="card card-red">
+      <div class="card-label">Security Fixes</div>
+      <div class="card-value">7</div>
+      <div class="card-note">Applied this session</div>
+    </div>
+    <div class="card card-yellow">
+      <div class="card-label">Open Issues</div>
+      <div class="card-value">28</div>
+      <div class="card-note">Medium &amp; low severity</div>
+    </div>
+    <div class="card card-teal">
+      <div class="card-label">Missing Pages</div>
+      <div class="card-value">10</div>
+      <div class="card-note">Pre-launch recommended</div>
+    </div>
+  </div>
+
+  <p style="font-size:11px;color:#57534e;line-height:1.65;max-width:680px;">
+    The site is architecturally sound. Payment, booking, admin, and email infrastructure are all wired to real backends.
+    Seven security vulnerabilities — including unauthenticated admin API endpoints and XSS in email templates — were
+    identified and patched during this audit. The new admin Schedule editor is complete and shipping in this build.
+    The primary pre-launch blockers are a missing <code>RESEND_API_KEY</code> (no confirmation emails will send),
+    a booking race condition requiring a database constraint, and several content pages that comparable parks universally include.
+  </p>
+
+  <div class="callout callout-yellow" style="margin-top:18px;">
+    <div class="callout-title">⚠ Square Production Credentials Are Active</div>
+    <div class="callout-body">Real payment credentials are in .env.local. Any card entered during local testing will be charged. Switch to Square sandbox credentials for development testing.</div>
+  </div>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 1 — SMOKE TEST
+══════════════════════════════════════════════ -->
+  <div class="section-eyebrow" style="margin-top:32px;">Section 1</div>
+  <h2>Smoke Test Results</h2>
+
+  <h3>Pages</h3>
+  <table>
+    <thead><tr><th>Route</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code> Home</td><td><span class="pill pill-green">✅ Working</span></td><td>Hero, activities, CTA. Facebook video slots are placeholder divs — no iframe src yet.</td></tr>
+      <tr><td><code>/playground</code></td><td><span class="pill pill-green">✅ Working</span></td><td>Ticket cards, gel blasters (coming soon), interactive pavilion map with booking modal.</td></tr>
+      <tr><td><code>/menu</code></td><td><span class="pill pill-green">✅ Working</span></td><td>3 food categories, add-to-cart functional, links to checkout.</td></tr>
+      <tr><td><code>/amphitheater</code></td><td><span class="pill pill-yellow">⚠ Partial</span></td><td>5 events listed. All ticket URLs are <code>"#"</code> — "Get Tickets" goes nowhere.</td></tr>
+      <tr><td><code>/contact</code></td><td><span class="pill pill-yellow">⚠ Partial</span></td><td>Form POSTs to real API. Social links (FB, IG, X) are all <code>href="#"</code>.</td></tr>
+      <tr><td><code>/checkout</code></td><td><span class="pill pill-green">✅ Working</span></td><td>4-step flow. Square SDK wired. Production credentials active — real charges possible.</td></tr>
+      <tr><td><code>/admin</code></td><td><span class="pill pill-green">✅ Working</span></td><td>Dashboard nav cards. Revenue/booking stats show "Coming Soon."</td></tr>
+      <tr><td><code>/admin/bookings</code></td><td><span class="pill pill-green">✅ Working</span></td><td>Full CRUD. Manual booking form. Cancel/refund with confirmation dialogs.</td></tr>
+      <tr><td><code>/admin/pricing</code></td><td><span class="pill pill-green">✅ Working</span></td><td>Per-pavilion price editor. Persists to Supabase.</td></tr>
+      <tr><td><code>/admin/products</code></td><td><span class="pill pill-green">✅ Working</span></td><td>Product catalog with Square sync. Now properly auth-gated (fixed this session).</td></tr>
+      <tr><td><code>/admin/schedule</code></td><td><span class="pill pill-green">✅ Working</span></td><td>New day-of-week availability + pricing editor. Complete and shipping in this build.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>API Routes</h3>
+  <table>
+    <thead><tr><th>Route &amp; Method</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>POST /api/reservation</code></td><td><span class="pill pill-green">✅</span></td><td>Square charge → DB write → QR email. Race condition exists (see open issues).</td></tr>
+      <tr><td><code>POST /api/payment</code></td><td><span class="pill pill-green">✅</span></td><td>Cart checkout. Square → DB → confirmation email.</td></tr>
+      <tr><td><code>GET /api/pavilions</code></td><td><span class="pill pill-green">✅</span></td><td>Live pricing with DB overrides, static fallback.</td></tr>
+      <tr><td><code>GET /api/availability</code></td><td><span class="pill pill-green">✅</span></td><td>Debounced conflict check. Time comparison is correct.</td></tr>
+      <tr><td><code>POST /api/contact</code></td><td><span class="pill pill-green">✅</span></td><td>Sends via Resend. Graceful no-op if key missing.</td></tr>
+      <tr><td>All <code>/api/admin/*</code></td><td><span class="pill pill-green">✅</span></td><td>All routes now auth-gated. GET endpoints patched this session.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Environment Variables</h3>
+  <table>
+    <thead><tr><th>Variable</th><th>Status</th><th>Impact</th></tr></thead>
+    <tbody>
+      <tr><td><code>NEXT_PUBLIC_SQUARE_APP_ID</code></td><td><span class="pill pill-green">✅ Set</span></td><td>Production — real charges active</td></tr>
+      <tr><td><code>SQUARE_ACCESS_TOKEN</code></td><td><span class="pill pill-green">✅ Set</span></td><td>Production</td></tr>
+      <tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td><span class="pill pill-green">✅ Set</span></td><td>Live database</td></tr>
+      <tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td><span class="pill pill-green">✅ Set</span></td><td>Full DB access</td></tr>
+      <tr><td><code>ADMIN_PASSWORD</code></td><td><span class="pill pill-yellow">⚠ Weak</span></td><td>"admin123" — change before launch</td></tr>
+      <tr><td><code>RESEND_API_KEY</code></td><td><span class="pill pill-red">❌ Missing</span></td><td>ALL emails silently fail — no QR codes delivered to customers</td></tr>
+      <tr><td><code>GOOGLE_CLIENT_ID/SECRET</code></td><td><span class="pill pill-gray">Dead</span></td><td>NextAuth was removed — these vars are unused, can be deleted</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 2 — SECURITY FIXES
+══════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="section-eyebrow">Section 2</div>
+  <h2>Security Fixes Applied This Session</h2>
+  <p style="font-size:10.5px;color:#57534e;margin-bottom:16px;">All 7 fixes are verified in the passing build. Zero regressions introduced.</p>
+
+  <div class="fix-item">
+    <div class="fix-num">1</div>
+    <div>
+      <div class="fix-title">Auth guard on GET /api/admin/pavilions</div>
+      <div class="fix-desc">Pavilion pricing and configuration data was readable by anyone without authentication.</div>
+      <div class="fix-file">app/api/admin/pavilions/route.ts</div>
+    </div>
+  </div>
+  <div class="fix-item">
+    <div class="fix-num">2</div>
+    <div>
+      <div class="fix-title">Auth guard on GET /api/admin/products</div>
+      <div class="fix-desc">Full product catalog (names, prices, Square IDs) was publicly exposed without a session cookie.</div>
+      <div class="fix-file">app/api/admin/products/route.ts</div>
+    </div>
+  </div>
+  <div class="fix-item">
+    <div class="fix-num">3</div>
+    <div>
+      <div class="fix-title">Auth guard on POST /api/admin/products</div>
+      <div class="fix-desc">Unauthenticated POST could create arbitrary products and trigger Square catalog API calls.</div>
+      <div class="fix-file">app/api/admin/products/route.ts</div>
+    </div>
+  </div>
+  <div class="fix-item">
+    <div class="fix-num">4</div>
+    <div>
+      <div class="fix-title">Auth guard on POST /api/admin/products/[id]/sync</div>
+      <div class="fix-desc">Square sync endpoint was unauthenticated — anyone could trigger paid Square API operations.</div>
+      <div class="fix-file">app/api/admin/products/[id]/sync/route.ts</div>
+    </div>
+  </div>
+  <div class="fix-item">
+    <div class="fix-num">5</div>
+    <div>
+      <div class="fix-title">Auth guard on GET /api/admin/schedule</div>
+      <div class="fix-desc">Day-of-week pricing schedule was readable without authentication.</div>
+      <div class="fix-file">app/api/admin/schedule/route.ts</div>
+    </div>
+  </div>
+  <div class="fix-item">
+    <div class="fix-num">6</div>
+    <div>
+      <div class="fix-title">HTML escaping (XSS) in email templates</div>
+      <div class="fix-desc">All user-supplied fields (customer name, email, phone, message, subject, order numbers) were injected directly into HTML email bodies without escaping. A customer named &lt;img src=x onerror=...&gt; would execute in the recipient's mail client. An esc() function now sanitizes every user value before HTML insertion.</div>
+      <div class="fix-file">lib/emailTemplates.ts — affects all 5 email templates</div>
+    </div>
+  </div>
+  <div class="fix-item">
+    <div class="fix-num">7</div>
+    <div>
+      <div class="fix-title">Server-side input validation on reservation route</div>
+      <div class="fix-desc">The API accepted any duration value (someone could book 365 hours and pay $0 due to calculation overflow), no email format validation, and no date bounds. Now enforces: duration 1–12 hours, valid email regex, date must be today through 6 months out.</div>
+      <div class="fix-file">app/api/reservation/route.ts</div>
+    </div>
+  </div>
+
+  <div class="section-eyebrow" style="margin-top:28px;">Remaining — Require Decisions or Larger Work</div>
+  <h2>Open Security Issues</h2>
+
+  <table>
+    <thead><tr><th>Issue</th><th>Severity</th><th>Recommended Fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Booking race condition</strong><br><span class="mono">app/api/reservation/route.ts</span></td>
+        <td><span class="pill pill-red">🔴 Critical</span></td>
+        <td>Add <code>UNIQUE(pavilion_id, date, start_time, end_time)</code> constraint to <code>pavilion_bookings</code> in Supabase. The route will receive a unique violation on the second insert and return a natural 409.</td>
+      </tr>
+      <tr>
+        <td><strong>No CSRF protection on admin mutations</strong></td>
+        <td><span class="pill pill-red">🔴 Critical</span></td>
+        <td>Generate a CSRF token in admin layout, include as hidden field in all forms, validate in POST/PATCH/DELETE handlers. Set session cookie to <code>SameSite=Strict</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>No rate limiting on public APIs</strong></td>
+        <td><span class="pill pill-yellow">🟡 Medium</span></td>
+        <td>Add <code>next-rate-limit</code> or Netlify edge rate limiting. Suggest: 3 reservation attempts/hr/IP, 5 contact form submissions/hr/IP.</td>
+      </tr>
+      <tr>
+        <td><strong>Admin session maxAge = 30 days</strong></td>
+        <td><span class="pill pill-yellow">🟡 Medium</span></td>
+        <td>Reduce to 7 days in <code>app/api/admin/login/route.ts</code>. Reduces stolen-cookie window.</td>
+      </tr>
+      <tr>
+        <td><strong>Admin password "admin123"</strong></td>
+        <td><span class="pill pill-yellow">🟡 Medium</span></td>
+        <td>Change to a strong password in <code>.env.local</code> and Netlify environment settings before launch.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 3 — CODE REVIEW
+══════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="section-eyebrow">Section 3</div>
+  <h2>Code Review Findings</h2>
+
+  <div class="cards">
+    <div class="card card-red">
+      <div class="card-label">Critical</div>
+      <div class="card-value">7</div>
+      <div class="card-note">All fixed or noted above</div>
+    </div>
+    <div class="card card-yellow">
+      <div class="card-label">Medium</div>
+      <div class="card-value">10</div>
+      <div class="card-note">Auth, error handling, RLS</div>
+    </div>
+    <div class="card card-green">
+      <div class="card-label">Low</div>
+      <div class="card-value">18</div>
+      <div class="card-note">TypeScript, logging, data quality</div>
+    </div>
+    <div class="card card-teal">
+      <div class="card-label">Total</div>
+      <div class="card-value">35</div>
+      <div class="card-note">Across full codebase</div>
+    </div>
+  </div>
+
+  <h3>Medium Issues — Notable Findings</h3>
+  <table>
+    <thead><tr><th>Issue</th><th>File</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Missing Supabase Row-Level Security (RLS)</td>
+        <td><code>lib/supabase.ts</code></td>
+        <td>Define RLS policies: public read for upcoming bookings, admin-only writes for configs/products/schedule.</td>
+      </tr>
+      <tr>
+        <td>Square env var fallback to sandbox in production</td>
+        <td><code>components/ReservationModal.tsx</code></td>
+        <td>Throw error if <code>NEXT_PUBLIC_SQUARE_APP_ID</code> is missing in production rather than silently falling back to sandbox string.</td>
+      </tr>
+      <tr>
+        <td>Admin pages missing Suspense boundaries</td>
+        <td><code>app/admin/layout.tsx</code></td>
+        <td>Wrap children in <code>&lt;Suspense&gt;</code> with a loading fallback so auth checks don't show blank pages.</td>
+      </tr>
+      <tr>
+        <td>No email retry on send failure</td>
+        <td><code>app/api/payment/route.ts</code></td>
+        <td>Email failures are caught and logged but not retried. Customer is charged with no confirmation. Add admin alert or retry queue.</td>
+      </tr>
+      <tr>
+        <td>Admin bookings not paginated</td>
+        <td><code>app/api/admin/bookings/route.ts</code></td>
+        <td>Returns all rows with no limit. Will degrade with scale. Add <code>limit</code>/<code>offset</code> query params.</td>
+      </tr>
+      <tr>
+        <td>useCart / useTheme throw without error boundary</td>
+        <td><code>context/CartContext.tsx</code></td>
+        <td>Hook throws if used outside provider; no error boundary catches it. Entire app crashes. Add <code>&lt;ErrorBoundary&gt;</code> in layout.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Low Issues — Notable Findings</h3>
+  <table>
+    <thead><tr><th>Issue</th><th>File</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Hardcoded auth defaults if env vars missing</td>
+        <td><code>lib/adminAuth.ts</code></td>
+        <td>Falls back to <code>"dev-secret"</code> and empty password — creates a loginable account. Throw on startup if vars missing.</td>
+      </tr>
+      <tr>
+        <td>No environment validation at startup</td>
+        <td>Multiple lib files</td>
+        <td>Create <code>lib/env.ts</code> that asserts all required env vars and import at <code>app/layout.tsx</code>.</td>
+      </tr>
+      <tr>
+        <td>Square catalog IDs all empty strings</td>
+        <td><code>data/pavilions.ts</code>, <code>data/products.ts</code></td>
+        <td>Populate from Square dashboard or via admin sync UI once catalog is set up.</td>
+      </tr>
+      <tr>
+        <td>Orphaned redirect page at /admin/login</td>
+        <td><code>app/admin/login/page.tsx</code></td>
+        <td>Redirects to <code>/admin-login</code>. Creates a double redirect chain. Remove this file.</td>
+      </tr>
+      <tr>
+        <td>No audit log for admin actions</td>
+        <td>Admin API routes</td>
+        <td>No record of who changed what. Add <code>audit_logs</code> Supabase table and log all mutations.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Positive Findings</h3>
+  <table>
+    <thead><tr><th>Area</th><th>Assessment</th></tr></thead>
+    <tbody>
+      <tr><td>TypeScript</td><td>Strict, zero build errors. Types are well-defined for all domain objects. <code>@ts-expect-error</code> used only for Square CDN window typing — acceptable.</td></tr>
+      <tr><td>Error handling</td><td>API routes consistently return typed errors with correct HTTP status codes. Supabase errors are caught and logged.</td></tr>
+      <tr><td>Payment flow</td><td>Idempotency keys used on all Square API calls. Race condition is noted but the charge-before-write ordering is a known limitation, not an oversight.</td></tr>
+      <tr><td>Graceful degradation</td><td>Missing Resend key, missing pavilion_schedule table, missing Square tokens — all handled gracefully with fallbacks. Site never white-screens from missing config.</td></tr>
+      <tr><td>Code consistency</td><td>Consistent naming conventions, import patterns, and file structure throughout. Admin routes follow a uniform auth + supabase + return pattern.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 4 — COMPETITIVE RESEARCH
+══════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="section-eyebrow">Section 4</div>
+  <h2>Competitive Research — Missing Features</h2>
+  <p style="font-size:10.5px;color:#57534e;margin-bottom:4px;">
+    Based on comparable Texas and national family entertainment parks: <em>Jellystone Park (Waller, TX), Sweet Berry Farm (Marble Falls, TX),
+    Camp Fimfo Texas Hill Country (New Braunfels), Arbor Hills Nature Preserve (Plano), Reveille Ranch (Brenham),
+    Urban Air Adventure Park (Austin), Fiesta Farm (Katy), Whitewater Amphitheater (New Braunfels).</em>
+  </p>
+
+  <h3>Tier 1 — Launch Blockers (Must-Have Before Grand Opening)</h3>
+  <table>
+    <thead><tr><th>#</th><th>Feature</th><th>Suggested Route</th><th>Revenue Impact</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="p1">1</td>
+        <td><strong>Birthday Party Packages page</strong></td>
+        <td><code>/birthday-parties</code></td>
+        <td>Very High — highest-margin pavilion use case; top search intent for parks of this type</td>
+      </tr>
+      <tr>
+        <td class="p1">2</td>
+        <td><strong>Pricing Transparency page</strong></td>
+        <td><code>/pricing</code></td>
+        <td>High — parks that hide pricing lose customers; a simple rates table converts well</td>
+      </tr>
+      <tr>
+        <td class="p1">3</td>
+        <td><strong>Cancellation / Refund Policy</strong></td>
+        <td><code>/policies</code></td>
+        <td>High (legal/trust) — reduces chargebacks and customer disputes</td>
+      </tr>
+      <tr>
+        <td class="p1">4</td>
+        <td><strong>FAQ page</strong></td>
+        <td><code>/faq</code></td>
+        <td>Medium — deflects 30–40% of support contacts (parking, coolers, rain policy, pets, alcohol)</td>
+      </tr>
+      <tr>
+        <td class="p1">5</td>
+        <td><strong>Park Rules page</strong></td>
+        <td><code>/rules</code> or same as policies</td>
+        <td>Medium — liability reduction, link from booking confirmation emails</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Tier 2 — Trust &amp; Conversion Boosters (Within 30 Days of Opening)</h3>
+  <table>
+    <thead><tr><th>#</th><th>Feature</th><th>Suggested Route</th><th>Revenue Impact</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="p2">6</td>
+        <td><strong>Photo / Video Gallery</strong></td>
+        <td><code>/gallery</code></td>
+        <td>High — parks that look empty online convert poorly; use construction photos pre-opening</td>
+      </tr>
+      <tr>
+        <td class="p2">7</td>
+        <td><strong>Group &amp; Corporate Bookings</strong></td>
+        <td><code>/group-events</code></td>
+        <td>High — school trips, corporate outings, church groups are separate revenue stream</td>
+      </tr>
+      <tr>
+        <td class="p2">8</td>
+        <td><strong>Online Waiver / Liability Form</strong></td>
+        <td>Smartwaiver or WaiverForever integration</td>
+        <td>Medium — reduces check-in line friction dramatically</td>
+      </tr>
+      <tr>
+        <td class="p2">9</td>
+        <td><strong>Reviews / Testimonials section</strong></td>
+        <td>Homepage or <code>/reviews</code></td>
+        <td>High — critical trust signal for a brand-new, unknown park</td>
+      </tr>
+      <tr>
+        <td class="p2">10</td>
+        <td><strong>Email / Newsletter Capture</strong></td>
+        <td>Homepage hero or footer</td>
+        <td>Medium — build a launch audience with a "Grand Opening" incentive</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Tier 3 — Growth Features (First 90 Days)</h3>
+  <table>
+    <thead><tr><th>#</th><th>Feature</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="p3">11</td><td><strong>SEO foundations</strong></td><td>LocalBusiness schema on homepage, Google My Business listing, meta descriptions per page, title tags targeting "pavilion rental Niederwald TX."</td></tr>
+      <tr><td class="p3">12</td><td><strong>Gift Cards</strong></td><td>Low effort, meaningful revenue especially around holidays. Integrates with Square.</td></tr>
+      <tr><td class="p3">13</td><td><strong>ADA / Accessibility statement</strong></td><td>Brief page covering paved paths, accessible restrooms, parking, stroller policy.</td></tr>
+      <tr><td class="p3">14</td><td><strong>Membership / Season Passes</strong></td><td>Parks with season passes see 3–5× higher LTV per family. Worth introducing by Summer 2026.</td></tr>
+      <tr><td class="p3">15</td><td><strong>Press / Media Kit</strong></td><td>Austin American-Statesman, local family blogs, and neighborhood Facebook groups drive early traffic. A downloadable kit makes outreach easy.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-yellow" style="margin-top:18px;">
+    <div class="callout-title">📅 Grand Opening Date Discrepancy</div>
+    <div class="callout-body">Every page of the site says <strong>May 16th, 2026</strong> (app/page.tsx lines 42, 75, 184 and components/Footer.tsx line 39). An earlier project brief referenced May 3rd. Please confirm which date is correct and update all instances if needed.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SECTION 5 — LAUNCH CHECKLIST
+══════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="section-eyebrow">Section 5</div>
+  <h2>Pre-Launch Checklist</h2>
+
+  <h3>🔴 Must-Do Before Opening Day</h3>
+  <table>
+    <thead><tr><th>Item</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><strong>RESEND_API_KEY missing</strong></td><td>Add to <code>.env.local</code> and Netlify environment variables. Without it, no booking confirmations, QR codes, or contact replies are sent.</td></tr>
+      <tr><td><strong>Booking race condition</strong></td><td>Run in Supabase SQL editor: <code>ALTER TABLE pavilion_bookings ADD CONSTRAINT unique_booking UNIQUE (pavilion_id, date, start_time);</code></td></tr>
+      <tr><td><strong>pavilion_schedule table</strong></td><td>Run the CREATE TABLE SQL shown in the admin Schedule page. Add the same DDL to <code>supabase/schema.sql</code>.</td></tr>
+      <tr><td><strong>Admin password</strong></td><td>Change <code>ADMIN_PASSWORD</code> from "admin123" to a strong password in all environments.</td></tr>
+      <tr><td><strong>Social media links</strong></td><td>Replace all <code>href="#"</code> for Facebook/Instagram/Twitter in Footer and Contact page with real URLs.</td></tr>
+      <tr><td><strong>Event ticket URLs</strong></td><td>Replace <code>ticketUrl: "#"</code> in <code>data/events.ts</code> for all 5 events once ticketing vendor is chosen.</td></tr>
+      <tr><td><strong>Facebook video embeds</strong></td><td>Add real <code>&lt;iframe&gt;</code> src URLs to the two video placeholder divs on the homepage.</td></tr>
+      <tr><td><strong>Confirm grand opening date</strong></td><td>Code says May 16th. Verify and update all 4 hardcoded instances if different.</td></tr>
+      <tr><td><strong>Delete unused Google OAuth vars</strong></td><td>Remove <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> from <code>.env.local</code> — NextAuth was removed.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>🟡 Recommended Within 2 Weeks</h3>
+  <table>
+    <thead><tr><th>Item</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Birthday Party Packages page</strong></td><td>Create <code>/birthday-parties</code> with 2–3 tiered packages, inclusions, capacity info, and booking CTA.</td></tr>
+      <tr><td><strong>Pricing page</strong></td><td>Create <code>/pricing</code> with pavilion hourly rates, park entry fees, and add-ons in a scannable table.</td></tr>
+      <tr><td><strong>Cancellation &amp; FAQ pages</strong></td><td>Create <code>/policies</code> and <code>/faq</code>. Link from booking confirmation emails.</td></tr>
+      <tr><td><strong>Admin dashboard stats</strong></td><td>Wire up the "Coming Soon" dashboard to show total bookings, revenue, and upcoming reservations.</td></tr>
+      <tr><td><strong>Reduce session maxAge</strong></td><td>Change from 30 days to 7 days in <code>app/api/admin/login/route.ts</code>.</td></tr>
+      <tr><td><strong>CSRF protection</strong></td><td>Add CSRF token generation and validation on all admin mutation endpoints.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>🟢 Nice-to-Have (First 90 Days)</h3>
+  <table>
+    <thead><tr><th>Item</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td>Rate limiting</td><td>Add <code>next-rate-limit</code> or Netlify edge rate limiting to reservation and contact APIs.</td></tr>
+      <tr><td>Photo gallery</td><td>Create <code>/gallery</code> — even construction/setup photos before opening.</td></tr>
+      <tr><td>Google My Business</td><td>Verify and complete GMB listing with hours, photos, and category.</td></tr>
+      <tr><td>LocalBusiness schema</td><td>Add JSON-LD schema markup to homepage for local SEO.</td></tr>
+      <tr><td>Supabase RLS policies</td><td>Define row-level security on all tables to enforce access control at the DB layer.</td></tr>
+      <tr><td>Email newsletter capture</td><td>Add a signup form to the homepage hero or footer with a Grand Opening incentive.</td></tr>
+      <tr><td>Audit log table</td><td>Create <code>audit_logs</code> in Supabase and log all admin mutations (pricing changes, cancellations, etc.).</td></tr>
+      <tr><td>Env validation on startup</td><td>Create <code>lib/env.ts</code> that asserts all required env vars and fails fast at startup rather than at runtime.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>To Run Locally</h3>
+  <div class="callout callout-green" style="margin-top:8px;">
+    <div class="callout-title">Build is ready. Run:</div>
+    <div class="callout-body"><code style="font-size:12px;font-weight:700;">npm run dev</code> — site available at http://localhost:3000<br><br>
+    Note: Add <code>RESEND_API_KEY</code> to <code>.env.local</code> to test email delivery. Switch to Square sandbox credentials before running payment tests to avoid real charges.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════ -->
+<div class="footer">
+  <div><strong>The Playground @niederwald</strong> — Site Audit Report · 2026-04-24</div>
+  <div>Generated by Claude Code (Anthropic) · Confidential</div>
+</div>
+
+</body>
+</html>

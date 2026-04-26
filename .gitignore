@@ -42,3 +42,16 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Claude Code — local settings + ephemeral worktrees
+.claude/settings.local.json
+.claude/worktrees/
+
+# Generated audit artifact (regen via scripts/generate-report.mjs)
+Playground-Niederwald-Audit-Report.pdf
+
+# Reference/source images at repo root (not used by site)
+/current map layout.png
+/niederwaldmap.png
+/playgroundmap.png
+/ChatGPT Image *.png
