@@ -1,6 +1,8 @@
 import { requireAuth } from "@/lib/adminAuth";
 import Link from "next/link";
 
+export const runtime = "nodejs";
+
 const navItems = [
   { href: "/admin",           label: "Dashboard",      icon: "▦"  },
   { href: "/admin/bookings",  label: "Bookings",       icon: "📅" },

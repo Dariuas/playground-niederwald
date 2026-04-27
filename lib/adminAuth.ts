@@ -77,10 +77,25 @@ export function sessionToken(): string {
 export async function isAuthenticated(): Promise<boolean> {
   const jar = await cookies();
   const value = jar.get(COOKIE)?.value;
-  if (!value) return false;
+  if (!value) {
+    console.log("[auth] no cookie present");
+    return false;
+  }
   const expected = sessionToken();
-  if (value.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(value), Buffer.from(expected));
+  const ok = value.length === expected.length &&
+    timingSafeEqual(Buffer.from(value), Buffer.from(expected));
+  if (!ok) {
+    console.log("[auth] mismatch", {
+      cookieLen: value.length,
+      expectedLen: expected.length,
+      cookiePrefix: value.slice(0, 8),
+      expectedPrefix: expected.slice(0, 8),
+      hasHashEnv: !!process.env.ADMIN_PASSWORD_HASH,
+      hasPlainEnv: !!process.env.ADMIN_PASSWORD,
+      hasSecret: !!process.env.NEXTAUTH_SECRET && process.env.NEXTAUTH_SECRET !== "dev-secret",
+    });
+  }
+  return ok;
 }
 
 /** Call in server components / route handlers — redirects if not authed. */
