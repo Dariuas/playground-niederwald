@@ -5,9 +5,11 @@ import { getResend, FROM, NOTIFY_EMAIL } from "@/lib/resend";
 import { pavilionConfirmationEmail, pavilionNotificationEmail } from "@/lib/emailTemplates";
 import { generateQRDataURL } from "@/lib/qrcode";
 import { pavilions } from "@/data/pavilions";
+import { addons as ADDON_CATALOG } from "@/data/products";
 
 const DEFAULT_FIRST_HOUR_CENTS = 3500;
 const DEFAULT_ADD_HOUR_CENTS = 1500;
+const ADDON_BY_ID = new Map(ADDON_CATALOG.map((a) => [a.id, a]));
 
 export async function POST(req: NextRequest) {
   const {
@@ -90,11 +92,38 @@ export async function POST(req: NextRequest) {
   const addHourCents = dayPricing
     ? dayPricing.addHour * 100
     : (cfg?.add_hour_price_cents ?? DEFAULT_ADD_HOUR_CENTS);
-  const serverAmountCents = firstHourCents + Math.max(0, duration - 1) * addHourCents;
+  const pavilionCents = firstHourCents + Math.max(0, duration - 1) * addHourCents;
+
+  // ── Validate add-ons against the catalog and re-compute their subtotal ──
+  type AddonLine = { id: string; name: string; unitPriceCents: number; qty: number; lineCents: number };
+  const addonLines: AddonLine[] = [];
+  let addonCents = 0;
+  if (Array.isArray(addons)) {
+    for (const raw of addons) {
+      if (!raw || typeof raw.id !== "string") continue;
+      const qty = Math.floor(Number(raw.qty));
+      if (!Number.isFinite(qty) || qty <= 0) continue;
+      if (qty > 200) {
+        return NextResponse.json({ error: "Add-on quantity is unreasonably high." }, { status: 400 });
+      }
+      const meta = ADDON_BY_ID.get(raw.id);
+      if (!meta) {
+        return NextResponse.json({ error: `Unknown add-on: ${raw.id}` }, { status: 400 });
+      }
+      const unitPriceCents = meta.price; // already in cents
+      const lineCents = unitPriceCents * qty;
+      addonLines.push({ id: meta.id, name: meta.name, unitPriceCents, qty, lineCents });
+      addonCents += lineCents;
+    }
+  }
+
+  const serverAmountCents = pavilionCents + addonCents;
 
   const clientAmountCents = Math.round(Number(total) * 100);
   if (Math.abs(serverAmountCents - clientAmountCents) > 1) {
-    console.warn("Reservation total mismatch", { pavilionId, duration, dayOfWeek, serverAmountCents, clientAmountCents });
+    console.warn("Reservation total mismatch", {
+      pavilionId, duration, dayOfWeek, pavilionCents, addonCents, serverAmountCents, clientAmountCents,
+    });
     return NextResponse.json(
       { error: "Pricing mismatch. Please refresh the page and try again." },
       { status: 400 }
@@ -113,7 +142,7 @@ export async function POST(req: NextRequest) {
     }
     partySizeValue = Math.floor(n);
   }
-  const addonsValue = Array.isArray(addons) && addons.length ? addons : null;
+  const addonsValue = addonLines.length ? addonLines : null;
 
   // ── Availability check (server-side to prevent race conditions) ───
   const { data: conflicts, error: availErr } = await supabase
@@ -252,6 +281,8 @@ export async function POST(req: NextRequest) {
           date,
           time,
           duration,
+          pavilionTotal: pavilionCents / 100,
+          addons: addonLines.map((l) => ({ name: l.name, qty: l.qty, price: l.unitPriceCents / 100 })),
           total: serverAmountCents / 100,
           qrDataUrl,
           reservationId,
@@ -270,6 +301,8 @@ export async function POST(req: NextRequest) {
           date,
           time,
           duration,
+          pavilionTotal: pavilionCents / 100,
+          addons: addonLines.map((l) => ({ name: l.name, qty: l.qty, price: l.unitPriceCents / 100 })),
           total: serverAmountCents / 100,
           reservationId,
           partySize: partySizeValue ?? undefined,

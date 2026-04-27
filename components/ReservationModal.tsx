@@ -2,11 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Script from "next/script";
-import { useRouter } from "next/navigation";
 import { Pavilion } from "@/data/pavilions";
-import { useCart } from "@/context/CartContext";
-
-const CHILD_TICKET_PRICE = 10; // $10/each — keep in sync with /playground
+import { addons as ADDON_CATALOG } from "@/data/products";
 
 const SQUARE_APP_ID      = process.env.NEXT_PUBLIC_SQUARE_APP_ID ?? "";
 const SQUARE_LOCATION_ID = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? "";
@@ -17,7 +14,7 @@ const SQUARE_SCRIPT      = SQUARE_ENV === "production"
 
 const DURATIONS = [1, 2, 3, 4, 6, 8];
 
-type Step       = "schedule" | "details" | "payment" | "confirmed";
+type Step       = "schedule" | "details" | "extras" | "payment" | "confirmed";
 type AvailState = "idle" | "checking" | "available" | "conflict" | "error";
 
 function timeToMinutes(t: string) {
@@ -41,8 +38,6 @@ function inputCls() {
 interface Props { pavilion: Pavilion; onClose: () => void; }
 
 export default function ReservationModal({ pavilion, onClose }: Props) {
-  const router = useRouter();
-  const { addItem } = useCart();
   const [step, setStep] = useState<Step>("schedule");
 
   // ── Live pricing (falls back to static data) ──
@@ -75,6 +70,9 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
   const [phone,     setPhone]     = useState("");
   const [partySize, setPartySize] = useState("");
 
+  // ── Extras (add-on quantities keyed by addon id) ──
+  const [addonQty, setAddonQty] = useState<Record<string, number>>({});
+
   // ── Payment (Square) ──
   const cardRef        = useRef<HTMLDivElement>(null);
   const cardInstance   = useRef<unknown>(null);
@@ -99,7 +97,17 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
     return { effectiveFirstHour: firstHourPrice, effectiveAddHour: additionalHourPrice, isFreeDay: false, dayLabel: labels[dow] };
   }, [date, firstHourPrice, additionalHourPrice, pavilion.schedule.dayPricing]);
 
-  const total = effectiveFirstHour + Math.max(0, duration - 1) * effectiveAddHour;
+  const pavilionTotal = effectiveFirstHour + Math.max(0, duration - 1) * effectiveAddHour;
+
+  const addonLines = useMemo(
+    () =>
+      ADDON_CATALOG
+        .map((a) => ({ ...a, qty: addonQty[a.id] ?? 0 }))
+        .filter((l) => l.qty > 0),
+    [addonQty]
+  );
+  const addonTotal = addonLines.reduce((sum, l) => sum + (l.price / 100) * l.qty, 0);
+  const total = pavilionTotal + addonTotal;
 
   // Block dates the pavilion is closed (selecting a closed day on the date picker → reset)
   const dayOpen = date
@@ -134,6 +142,17 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
 
     return () => clearTimeout(timer);
   }, [date, time, duration, pavilion.id]);
+
+  // ── On entering Extras: default child-entry tickets to match party size ──
+  useEffect(() => {
+    if (step !== "extras") return;
+    const n = Number(partySize);
+    if (!Number.isFinite(n) || n < 1) return;
+    setAddonQty((prev) => {
+      if (prev["child-entry-addon"] !== undefined) return prev;
+      return { ...prev, "child-entry-addon": n };
+    });
+  }, [step, partySize]);
 
   // ── Initialize Square card when entering payment step (skip if free) ──
   useEffect(() => {
@@ -172,6 +191,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
         date, time, duration, total,
         name, email, phone,
         partySize: partySize ? Number(partySize) : null,
+        addons: addonLines.map((l) => ({ id: l.id, qty: l.qty })),
         squareToken: squareTokenValue,
       }),
     });
@@ -217,9 +237,10 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
 
   // ── Step indicator labels ──
   const steps: { id: Step; label: string }[] = [
-    { id: "schedule", label: "Time" },
-    { id: "details",  label: "Info" },
-    { id: "payment",  label: "Pay"  },
+    { id: "schedule", label: "Time"    },
+    { id: "details",  label: "Info"    },
+    { id: "extras",   label: "Tickets" },
+    { id: "payment",  label: "Pay"     },
   ];
   const stepIdx = steps.findIndex((s) => s.id === step);
 
@@ -283,7 +304,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                 <p className="text-stone-700 text-sm leading-snug">
                   Pavilion rentals only cover the shaded space.{" "}
                   <strong className="text-red-700">Park entry tickets are required for every guest</strong>{" "}
-                  — even with a pavilion. You&apos;ll be prompted to buy tickets right after booking.
+                  — you can add them in the next steps and pay for everything together.
                 </p>
               </div>
 
@@ -428,7 +449,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                   onChange={(e) => setPartySize(e.target.value)} placeholder={`e.g. 20`}
                   className={inputCls()} />
                 <p className="text-stone-400 text-xs mt-1">
-                  Helps us prepare. Park entry tickets are <strong>not</strong> included — purchase tickets separately for each guest.
+                  Helps us prepare. We&apos;ll pre-fill park entry tickets for this many guests on the next step.
                 </p>
               </div>
 
@@ -439,7 +460,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                 </button>
                 <button type="button"
                   disabled={!name.trim() || !email.trim() || !partySize || Number(partySize) < 1 || Number(partySize) > pavilion.capacity}
-                  onClick={() => setStep("payment")}
+                  onClick={() => setStep("extras")}
                   className="flex-1 bg-teal-700 hover:bg-teal-600 disabled:opacity-50 text-white font-black py-3 rounded-xl transition-colors uppercase tracking-wider text-sm">
                   Continue →
                 </button>
@@ -448,7 +469,86 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
           )}
 
           {/* ══════════════════════════════════════════
-              STEP 3 — Payment
+              STEP 3 — Extras (park entry + add-ons)
+          ══════════════════════════════════════════ */}
+          {step === "extras" && (
+            <div className="space-y-4">
+              <div className="bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3">
+                <p className="text-red-700 text-[10px] uppercase tracking-widest font-black mb-1">⚠ Required for every guest</p>
+                <p className="text-stone-700 text-sm leading-snug">
+                  Park entry is <strong className="text-red-700">not</strong> included in the pavilion rental. Add a ticket
+                  for each child below — we&apos;ve pre-filled the count from your guest size.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {ADDON_CATALOG.map((a) => {
+                  const qty = addonQty[a.id] ?? 0;
+                  const isRequired = a.id === "child-entry-addon";
+                  return (
+                    <div
+                      key={a.id}
+                      className={`bg-white border-2 rounded-xl p-3 flex items-center gap-3 ${isRequired ? "border-red-200" : "border-amber-100"}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-stone-800 font-black text-sm leading-tight">
+                          {a.name}
+                          {isRequired && <span className="ml-2 text-[10px] font-black text-red-600 uppercase tracking-wider">Required</span>}
+                        </p>
+                        <p className="text-stone-500 text-xs mt-0.5 line-clamp-2">{a.description}</p>
+                        <p className="text-teal-700 font-black text-sm mt-1">${(a.price / 100).toFixed(2)}{a.id !== "child-entry-addon" ? "" : " each"}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setAddonQty((p) => ({ ...p, [a.id]: Math.max(0, (p[a.id] ?? 0) - 1) }))}
+                          className="w-8 h-8 rounded-lg bg-amber-50 border-2 border-amber-100 text-stone-700 font-black flex items-center justify-center hover:border-teal-300"
+                        >−</button>
+                        <span className="text-stone-800 font-black w-6 text-center">{qty}</span>
+                        <button
+                          type="button"
+                          onClick={() => setAddonQty((p) => ({ ...p, [a.id]: (p[a.id] ?? 0) + 1 }))}
+                          className="w-8 h-8 rounded-lg bg-amber-50 border-2 border-amber-100 text-stone-700 font-black flex items-center justify-center hover:border-teal-300"
+                        >+</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Running total */}
+              <div className="bg-amber-50 border-2 border-amber-100 rounded-xl px-4 py-3 space-y-1">
+                <div className="flex justify-between text-sm text-stone-500">
+                  <span>Pavilion ({duration} hr{duration !== 1 ? "s" : ""})</span>
+                  <span className="text-stone-700 font-semibold">${pavilionTotal.toFixed(2)}</span>
+                </div>
+                {addonLines.map((l) => (
+                  <div key={l.id} className="flex justify-between text-sm text-stone-500">
+                    <span>{l.name} × {l.qty}</span>
+                    <span className="text-stone-700 font-semibold">${((l.price / 100) * l.qty).toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between text-stone-800 font-black text-base border-t-2 border-amber-200 pt-2 mt-1">
+                  <span>Total</span>
+                  <span className="text-teal-700">${total.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setStep("details")}
+                  className="flex-1 border-2 border-amber-100 hover:border-teal-200 text-stone-500 hover:text-teal-600 font-bold py-3 rounded-xl transition-colors text-sm">
+                  ← Back
+                </button>
+                <button type="button" onClick={() => setStep("payment")}
+                  className="flex-1 bg-teal-700 hover:bg-teal-600 text-white font-black py-3 rounded-xl transition-colors uppercase tracking-wider text-sm">
+                  Continue →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════
+              STEP 4 — Payment
           ══════════════════════════════════════════ */}
           {step === "payment" && (
             <div className="space-y-4">
@@ -457,6 +557,20 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                 <p className="text-teal-700 font-bold">{pavilion.name}</p>
                 <p className="text-teal-600">{date} at {time} · {duration} hr{duration !== 1 ? "s" : ""}</p>
                 <p className="text-stone-500 mt-1">For: {name} ({email})</p>
+              </div>
+
+              {/* Order breakdown */}
+              <div className="bg-white border-2 border-amber-100 rounded-xl px-4 py-3 space-y-1">
+                <div className="flex justify-between text-sm text-stone-500">
+                  <span>Pavilion ({duration} hr{duration !== 1 ? "s" : ""})</span>
+                  <span className="text-stone-700 font-semibold">${pavilionTotal.toFixed(2)}</span>
+                </div>
+                {addonLines.map((l) => (
+                  <div key={l.id} className="flex justify-between text-sm text-stone-500">
+                    <span>{l.name} × {l.qty}</span>
+                    <span className="text-stone-700 font-semibold">${((l.price / 100) * l.qty).toFixed(2)}</span>
+                  </div>
+                ))}
               </div>
 
               {/* Square card form — hidden for free bookings */}
@@ -494,7 +608,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
               {/* Total */}
               <div className="flex justify-between items-center bg-amber-50 border-2 border-amber-100 rounded-xl px-4 py-3">
                 <span className="text-stone-500 text-sm font-semibold">Total due today</span>
-                <span className="text-teal-700 font-black text-2xl">${total}</span>
+                <span className="text-teal-700 font-black text-2xl">${total.toFixed(2)}</span>
               </div>
 
               {payError && (
@@ -511,10 +625,10 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                   ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing…</>
                   : total === 0
                     ? "✓ Confirm Free Booking"
-                    : `🔒 Pay $${total} Now`}
+                    : `🔒 Pay $${total.toFixed(2)} Now`}
               </button>
 
-              <button type="button" onClick={() => setStep("details")}
+              <button type="button" onClick={() => setStep("extras")}
                 className="block w-full text-center text-stone-400 hover:text-teal-600 text-xs font-bold uppercase tracking-wider transition-colors">
                 ← Back
               </button>
@@ -525,58 +639,39 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
               CONFIRMED
           ══════════════════════════════════════════ */}
           {step === "confirmed" && (
-            <div className="text-center py-4">
+            <div className="text-center py-6">
               <div className="text-5xl mb-3">🤠</div>
               <h3 className="text-xl font-black text-stone-800 mb-2">Yeehaw! You&apos;re booked!</h3>
               <p className="text-stone-500 text-sm">{pavilion.name}</p>
               <p className="text-stone-500 text-sm">{date} at {time} · {duration} hr{duration !== 1 ? "s" : ""}</p>
-              <p className="text-teal-700 font-black text-2xl mt-3">${total}</p>
+              <p className="text-teal-700 font-black text-2xl mt-3">${total.toFixed(2)}</p>
               {reservationId && (
                 <p className="text-stone-400 text-xs mt-1">Reservation: {reservationId}</p>
               )}
-              <p className="text-stone-400 text-xs mt-3 max-w-xs mx-auto">
+
+              {/* Itemized recap */}
+              <div className="mt-5 bg-amber-50 border-2 border-amber-100 rounded-xl px-4 py-3 text-left text-sm space-y-1">
+                <div className="flex justify-between text-stone-500">
+                  <span>Pavilion ({duration} hr{duration !== 1 ? "s" : ""})</span>
+                  <span className="text-stone-700 font-semibold">${pavilionTotal.toFixed(2)}</span>
+                </div>
+                {addonLines.map((l) => (
+                  <div key={l.id} className="flex justify-between text-stone-500">
+                    <span>{l.name} × {l.qty}</span>
+                    <span className="text-stone-700 font-semibold">${((l.price / 100) * l.qty).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-stone-400 text-xs mt-4 max-w-xs mx-auto">
                 Confirmation and QR code sent to{" "}
                 <strong className="text-stone-600">{email}</strong>.
               </p>
 
-              {/* Required park-entry tickets prompt */}
-              <div className="mt-6 bg-red-50 border-2 border-red-300 rounded-2xl p-4 text-left">
-                <p className="text-red-700 text-[10px] uppercase tracking-widest font-black mb-1">⚠ One more step</p>
-                <h4 className="text-stone-800 font-black text-base leading-tight mb-1">
-                  Buy park entry tickets for your guests
-                </h4>
-                <p className="text-stone-600 text-xs leading-snug mb-3">
-                  Your pavilion is reserved, but each guest still needs a park entry ticket
-                  ({partySize ? `${partySize} guests` : "you"} expected · ${CHILD_TICKET_PRICE} per child).
-                  Add tickets now and skip the line at the gate.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const qty = Math.max(1, Number(partySize) || 1);
-                    for (let i = 0; i < qty; i++) {
-                      addItem({
-                        id: "child-entry-addon",
-                        name: "Child Entry Ticket",
-                        price: CHILD_TICKET_PRICE,
-                        category: "Park Entry",
-                      });
-                    }
-                    onClose();
-                    router.push("/checkout");
-                  }}
-                  className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-2.5 rounded-xl transition-colors uppercase text-sm tracking-wider"
-                >
-                  + Add {Math.max(1, Number(partySize) || 1)} Ticket{Number(partySize) === 1 ? "" : "s"} to Cart
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-full mt-2 text-stone-400 hover:text-stone-600 text-xs font-bold uppercase tracking-wider transition-colors"
-                >
-                  Skip — I&apos;ll buy tickets at the gate
-                </button>
-              </div>
+              <button onClick={onClose}
+                className="mt-6 bg-teal-700 hover:bg-teal-600 text-white font-black py-2 px-6 rounded-xl transition-colors uppercase text-sm tracking-wider">
+                Done
+              </button>
             </div>
           )}
 

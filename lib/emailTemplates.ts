@@ -149,6 +149,8 @@ export function pavilionConfirmationEmail(opts: {
   date: string;
   time: string;
   duration: number;
+  pavilionTotal?: number;
+  addons?: { name: string; qty: number; price: number }[];
   total: number;
   qrDataUrl: string;
   reservationId: string;
@@ -162,7 +164,33 @@ export function pavilionConfirmationEmail(opts: {
     ["Duration",       `${opts.duration} hr${opts.duration !== 1 ? "s" : ""}`],
   ];
   if (opts.partySize) rows.push(["Party Size", `${opts.partySize} guests`]);
-  rows.push(["Total Charged", `$${opts.total}`]);
+  if (opts.pavilionTotal !== undefined) {
+    rows.push(["Pavilion", `$${opts.pavilionTotal.toFixed(2)}`]);
+  }
+  if (opts.addons && opts.addons.length > 0) {
+    for (const a of opts.addons) {
+      rows.push([
+        `${esc(a.name)} ×${a.qty}`,
+        `$${(a.price * a.qty).toFixed(2)}`,
+      ]);
+    }
+  }
+  rows.push(["Total Charged", `$${opts.total.toFixed(2)}`]);
+
+  const childTickets = (opts.addons ?? []).find((a) => /child entry/i.test(a.name));
+  const headsUp = childTickets
+    ? `<div style="background:#ecfdf5;border:2px solid #a7f3d0;border-radius:12px;padding:16px 20px;margin:16px 0;">
+        <p style="font-size:12px;font-weight:900;color:#047857;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">You're set</p>
+        <p style="font-size:13px;color:#065f46;margin:0;line-height:1.6;">
+          You bought <strong>${childTickets.qty} park entry ticket${childTickets.qty !== 1 ? "s" : ""}</strong> with this booking. Bring extra guests? Add tickets at the gate.
+        </p>
+      </div>`
+    : `<div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:16px 20px;margin:16px 0;">
+        <p style="font-size:12px;font-weight:900;color:#92400e;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">Heads Up</p>
+        <p style="font-size:13px;color:#78350f;margin:0;line-height:1.6;">
+          Pavilion rental does <strong>not</strong> include park entry tickets — each guest needs their own ticket to access the playground, train, and jumping blob. Add tickets at the gate or call ahead.
+        </p>
+      </div>`;
 
   const content = `
     ${h2("Pavilion Reserved! 🏡")}
@@ -171,12 +199,7 @@ export function pavilionConfirmationEmail(opts: {
     ${divider()}
     ${qrBlock(opts.qrDataUrl, "Show this when you arrive at your pavilion")}
     ${divider()}
-    <div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:16px 20px;margin:16px 0;">
-      <p style="font-size:12px;font-weight:900;color:#92400e;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">Heads Up</p>
-      <p style="font-size:13px;color:#78350f;margin:0;line-height:1.6;">
-        Pavilion rental does <strong>not</strong> include park entry tickets — each guest needs their own ticket to access the playground, train, and jumping blob. Buy tickets in advance to skip the gate line!
-      </p>
-    </div>
+    ${headsUp}
     ${p("Need to cancel or reschedule? Please call us at least 48 hours in advance.", "#6b7280")}
     ${cta("Get Directions", "https://maps.google.com/?q=7400+Niederwald+Strasse+Niederwald+TX+78640")}
   `;
@@ -194,6 +217,8 @@ export function pavilionNotificationEmail(opts: {
   date: string;
   time: string;
   duration: number;
+  pavilionTotal?: number;
+  addons?: { name: string; qty: number; price: number }[];
   total: number;
   reservationId: string;
   partySize?: number;
@@ -206,8 +231,19 @@ export function pavilionNotificationEmail(opts: {
     ["Duration",       `${opts.duration} hr${opts.duration !== 1 ? "s" : ""}`],
   ];
   if (opts.partySize) rows.push(["Party Size", `${opts.partySize} guests`]);
+  if (opts.pavilionTotal !== undefined) {
+    rows.push(["Pavilion", `$${opts.pavilionTotal.toFixed(2)}`]);
+  }
+  if (opts.addons && opts.addons.length > 0) {
+    for (const a of opts.addons) {
+      rows.push([
+        `${esc(a.name)} ×${a.qty}`,
+        `$${(a.price * a.qty).toFixed(2)}`,
+      ]);
+    }
+  }
   rows.push(
-    ["Charged",  `$${opts.total}`],
+    ["Charged",  `$${opts.total.toFixed(2)}`],
     ["Customer", esc(opts.customerName)],
     ["Email",    esc(opts.customerEmail)],
     ["Phone",    esc(opts.customerPhone || "—")],
