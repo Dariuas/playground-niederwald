@@ -353,24 +353,52 @@ function CalendarView({
       <div className="grid grid-cols-7 gap-1">
         {cells.map((cell, i) => {
           if (!cell) return <div key={i} />;
-          const count = cell.bookings.length;
+          const sorted = [...cell.bookings].sort((a, b) => a.start_time.localeCompare(b.start_time));
+          const count = sorted.length;
           const isToday = cell.date === todayStr;
           const tone =
-            count === 0 ? "bg-stone-50 border-stone-100 text-stone-400 hover:border-teal-200" :
-            count === 1 ? "bg-green-50 border-green-200 text-green-800 hover:border-green-400" :
-            count === 2 ? "bg-amber-50 border-amber-300 text-amber-800 hover:border-amber-500" :
-                          "bg-red-50 border-red-300 text-red-700 hover:border-red-500";
+            count === 0 ? "bg-stone-50 border-stone-100 hover:border-teal-200" :
+            count === 1 ? "bg-green-50 border-green-200 hover:border-green-400" :
+            count === 2 ? "bg-amber-50 border-amber-300 hover:border-amber-500" :
+                          "bg-red-50 border-red-300 hover:border-red-500";
+
+          // Show up to 3 bookings; collapse the rest into a "+N more" pill
+          const visible = sorted.slice(0, 3);
+          const overflow = count - visible.length;
+
           return (
             <button
               key={cell.date}
               onClick={() => onPickDate(cell.date)}
-              className={`relative aspect-square rounded-lg border-2 ${tone} ${isToday ? "ring-2 ring-teal-500" : ""} text-left p-1.5 transition-colors`}
-              title={count === 0 ? "Available — no bookings" : `${count} booking${count !== 1 ? "s" : ""}`}
+              className={`relative min-h-[110px] rounded-lg border-2 ${tone} ${isToday ? "ring-2 ring-teal-500" : ""} text-left p-1.5 transition-colors flex flex-col`}
+              title={count === 0 ? "Available — no bookings" : `${count} booking${count !== 1 ? "s" : ""} — click to view list`}
             >
-              <span className="text-xs font-bold">{cell.day}</span>
-              {count > 0 && (
-                <span className="absolute bottom-1 right-1 text-[10px] font-black bg-white/70 rounded px-1">{count}</span>
-              )}
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-xs font-bold ${count === 0 ? "text-stone-400" : "text-stone-800"}`}>{cell.day}</span>
+                {count > 0 && (
+                  <span className="text-[10px] font-black bg-white/80 rounded px-1.5 text-stone-700">
+                    {count}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-0.5 flex-1 overflow-hidden">
+                {visible.map((b) => {
+                  const shortName = b.pavilion_name.replace(/^Pavilion\s+/i, "P").replace(/^Games Pavilion$/i, "Games");
+                  return (
+                    <div
+                      key={b.id}
+                      className="text-[10px] leading-tight bg-white/70 rounded px-1 py-0.5 truncate text-stone-700"
+                    >
+                      <span className="font-black text-teal-700">{shortName}</span>{" "}
+                      <span className="text-stone-600">{formatTime(b.start_time)}–{formatTime(b.end_time)}</span>
+                      {b.party_size ? <span className="text-stone-500"> · {b.party_size}p</span> : null}
+                    </div>
+                  );
+                })}
+                {overflow > 0 && (
+                  <div className="text-[10px] font-bold text-stone-500">+{overflow} more</div>
+                )}
+              </div>
             </button>
           );
         })}
