@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS pavilion_bookings (
   guest_name         TEXT        NOT NULL,
   guest_email        TEXT        NOT NULL,
   guest_phone        TEXT,
-  total_cents        INTEGER     NOT NULL CHECK (total_cents > 0),
+  total_cents        INTEGER     NOT NULL CHECK (total_cents >= 0),
   status             TEXT        NOT NULL DEFAULT 'confirmed'
                                  CHECK (status IN ('confirmed','cancelled','refunded')),
   square_payment_id  TEXT,

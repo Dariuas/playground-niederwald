@@ -4,6 +4,10 @@ import { getSupabaseAdmin, addHoursToTime } from "@/lib/supabase";
 import { getResend, FROM, NOTIFY_EMAIL } from "@/lib/resend";
 import { pavilionConfirmationEmail, pavilionNotificationEmail } from "@/lib/emailTemplates";
 import { generateQRDataURL } from "@/lib/qrcode";
+import { pavilions } from "@/data/pavilions";
+
+const DEFAULT_FIRST_HOUR_CENTS = 3500;
+const DEFAULT_ADD_HOUR_CENTS = 1500;
 
 export async function POST(req: NextRequest) {
   const {
@@ -40,6 +44,40 @@ export async function POST(req: NextRequest) {
   const endTime = addHoursToTime(time, duration);
   const supabase = getSupabaseAdmin();
 
+  // ── Validate pavilion + recompute total server-side ───────────────
+  // Never trust the client-supplied total. Recompute from pavilion_configs
+  // (which the admin can edit) falling back to defaults.
+  const staticPavilion = pavilions.find((p) => p.id === pavilionId);
+  if (!staticPavilion) {
+    return NextResponse.json({ error: "Unknown pavilion." }, { status: 400 });
+  }
+
+  const { data: cfg } = await supabase
+    .from("pavilion_configs")
+    .select("first_hour_price_cents, add_hour_price_cents, is_active")
+    .eq("pavilion_id", pavilionId)
+    .single();
+
+  if (cfg && cfg.is_active === false) {
+    return NextResponse.json(
+      { error: "This pavilion is not currently available for booking." },
+      { status: 400 }
+    );
+  }
+
+  const firstHourCents = cfg?.first_hour_price_cents ?? DEFAULT_FIRST_HOUR_CENTS;
+  const addHourCents = cfg?.add_hour_price_cents ?? DEFAULT_ADD_HOUR_CENTS;
+  const serverAmountCents = firstHourCents + Math.max(0, duration - 1) * addHourCents;
+
+  const clientAmountCents = Math.round(Number(total) * 100);
+  if (Math.abs(serverAmountCents - clientAmountCents) > 1) {
+    console.warn("Reservation total mismatch", { pavilionId, duration, serverAmountCents, clientAmountCents });
+    return NextResponse.json(
+      { error: "Pricing mismatch. Please refresh the page and try again." },
+      { status: 400 }
+    );
+  }
+
   // ── Availability check (server-side to prevent race conditions) ───
   const { data: conflicts, error: availErr } = await supabase
     .from("pavilion_bookings")
@@ -63,7 +101,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Charge via Square ─────────────────────────────────────────────
-  const amountCents = Math.round(total * 100);
+  const amountCents = serverAmountCents;
   const reservationId = "RES-" + Math.floor(100000 + Math.random() * 900000).toString();
 
   const squareRes = await fetch("https://connect.squareup.com/v2/payments", {
@@ -120,22 +158,27 @@ export async function POST(req: NextRequest) {
       guest: email,
       dbError,
     });
-    await supabase.from("failed_reservations").insert({
-      reservation_id:    reservationId,
-      square_payment_id: squarePaymentId,
-      pavilion_id:       pavilionId,
-      pavilion_name:     pavilionName,
-      date,
-      start_time:        time,
-      duration_hours:    duration,
-      guest_name:        name,
-      guest_email:       email,
-      guest_phone:       phone || null,
-      total_cents:       amountCents,
-      db_error:          dbError.message ?? String(dbError),
-    }).then(({ error }) => {
-      if (error) console.error("failed_reservations insert also failed:", error);
-    });
+    try {
+      const { error: reconErr } = await supabase.from("failed_reservations").insert({
+        reservation_id:    reservationId,
+        square_payment_id: squarePaymentId,
+        pavilion_id:       pavilionId,
+        pavilion_name:     pavilionName,
+        date,
+        start_time:        time,
+        duration_hours:    duration,
+        guest_name:        name,
+        guest_email:       email,
+        guest_phone:       phone || null,
+        total_cents:       amountCents,
+        db_error:          dbError.message ?? String(dbError),
+      });
+      if (reconErr) {
+        console.error("failed_reservations insert also failed:", reconErr);
+      }
+    } catch (err) {
+      console.error("failed_reservations insert threw:", err);
+    }
     // Still return success — payment went through and we have a Square ID for recovery
   }
 
