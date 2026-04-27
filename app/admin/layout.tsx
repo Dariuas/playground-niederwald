@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 const navItems = [
   { href: "/admin",           label: "Dashboard",      icon: "▦"  },
   { href: "/admin/bookings",  label: "Bookings",       icon: "📅" },
+  { href: "/admin/sales",     label: "Sales",          icon: "💰" },
   { href: "/admin/schedule",  label: "Schedule",       icon: "🗓" },
   { href: "/admin/pricing",   label: "Pricing",        icon: "💲" },
   { href: "/admin/products",  label: "Products",       icon: "🏷" },
