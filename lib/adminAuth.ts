@@ -6,18 +6,22 @@ const COOKIE = "admin_session";
 const SCRYPT_KEYLEN = 64;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-function getSecret(): string {
+export type AuthFailReason =
+  | "nocookie"
+  | "badformat"
+  | "badsig"
+  | "expired"
+  | "nosecret";
+
+function getSecret(): string | null {
   const secret = process.env.NEXTAUTH_SECRET;
   if (!secret || secret === "dev-secret") {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("NEXTAUTH_SECRET must be set in production.");
-    }
+    if (process.env.NODE_ENV === "production") return null;
     return "dev-secret";
   }
   return secret;
 }
 
-/** Hash a plaintext password using scrypt. Format: "salt:hash" (hex). */
 export function hashPassword(plaintext: string): string {
   const salt = randomBytes(16);
   const hash = scryptSync(plaintext, salt, SCRYPT_KEYLEN);
@@ -40,10 +44,6 @@ function verifyScrypt(plaintext: string, stored: string): boolean {
   return timingSafeEqual(expected, actual);
 }
 
-/**
- * Verify a password attempt against the configured admin credential.
- * Prefers ADMIN_PASSWORD_HASH (scrypt). Falls back to ADMIN_PASSWORD plaintext.
- */
 export function verifyAdminPassword(attempt: string): boolean {
   if (!attempt) return false;
   const hash = process.env.ADMIN_PASSWORD_HASH;
@@ -59,43 +59,55 @@ export function verifyAdminPassword(attempt: string): boolean {
   return false;
 }
 
-function sign(payload: string): string {
-  return createHmac("sha256", getSecret()).update(payload).digest("hex");
+function sign(payload: string, secret: string): string {
+  return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
-/** Issue a fresh session cookie value: "v1.<expMs>.<hmac>". */
 export function sessionToken(): string {
+  const secret = getSecret();
+  if (!secret) throw new Error("NEXTAUTH_SECRET must be set in production.");
   const exp = Date.now() + SESSION_TTL_MS;
   const payload = `v1.${exp}`;
-  return `${payload}.${sign(payload)}`;
+  return `${payload}.${sign(payload, secret)}`;
 }
 
-/** Verify the request cookie. Returns true if valid and unexpired. */
-export async function isAuthenticated(): Promise<boolean> {
+/** Detailed auth check that returns the reason for failure. */
+export async function checkAuth(): Promise<{ ok: true } | { ok: false; reason: AuthFailReason }> {
+  const secret = getSecret();
+  if (!secret) return { ok: false, reason: "nosecret" };
+
   const jar = await cookies();
   const value = jar.get(COOKIE)?.value;
-  if (!value) return false;
+  if (!value) return { ok: false, reason: "nocookie" };
 
   const lastDot = value.lastIndexOf(".");
-  if (lastDot <= 0) return false;
+  if (lastDot <= 0) return { ok: false, reason: "badformat" };
   const payload = value.slice(0, lastDot);
   const sig = value.slice(lastDot + 1);
 
-  if (!payload.startsWith("v1.")) return false;
+  if (!payload.startsWith("v1.")) return { ok: false, reason: "badformat" };
 
-  const expected = sign(payload);
-  if (sig.length !== expected.length) return false;
-  if (!timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex"))) return false;
+  const expected = sign(payload, secret);
+  if (sig.length !== expected.length) return { ok: false, reason: "badsig" };
+  if (!timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex"))) {
+    return { ok: false, reason: "badsig" };
+  }
 
   const exp = Number(payload.slice(3));
-  if (!Number.isFinite(exp) || exp < Date.now()) return false;
+  if (!Number.isFinite(exp) || exp < Date.now()) return { ok: false, reason: "expired" };
 
-  return true;
+  return { ok: true };
 }
 
-/** Call in server components / route handlers — redirects if not authed. */
+export async function isAuthenticated(): Promise<boolean> {
+  const r = await checkAuth();
+  return r.ok;
+}
+
+/** Redirects to /admin-login?why=<reason> so the failure surface in the URL. */
 export async function requireAuth() {
-  if (!(await isAuthenticated())) redirect("/admin-login");
+  const r = await checkAuth();
+  if (!r.ok) redirect(`/admin-login?why=${r.reason}`);
 }
 
 export { COOKIE };

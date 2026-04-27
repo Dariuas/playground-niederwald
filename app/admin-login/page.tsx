@@ -1,13 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
+const REASON_TEXT: Record<string, string> = {
+  nocookie:   "No session cookie was sent on the next request — try a different browser or disable extensions.",
+  badformat:  "Session cookie format invalid — clear cookies and try again.",
+  badsig:     "Session signature mismatch — NEXTAUTH_SECRET likely differs between requests or is unset.",
+  expired:    "Session expired — sign in again.",
+  nosecret:   "NEXTAUTH_SECRET is not set in Netlify env (or is 'dev-secret'). Add it and redeploy.",
+};
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
+
+  useEffect(() => {
+    const why = new URLSearchParams(window.location.search).get("why");
+    if (why && REASON_TEXT[why]) setError(`[${why}] ${REASON_TEXT[why]}`);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
