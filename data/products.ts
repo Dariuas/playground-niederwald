@@ -21,6 +21,13 @@ export interface Product {
 
 export const addons: Addon[] = [
   {
+    id: "child-entry-addon",
+    name: "Child Entry Ticket",
+    price: 10_00,
+    description: "Ages 3–12 — playground, train rides, and jumping blob included. Buy one for each guest!",
+    squareCatalogId: "",
+  },
+  {
     id: "unlimited-train",
     name: "Unlimited Train Rides",
     price: 5_00,
@@ -37,14 +44,14 @@ export const addons: Addon[] = [
   },
   {
     id: "gem-bag-small",
-    name: "Gem Mining Bag (Small) — $13",
+    name: "Gem Mining Bag (Small)",
     price: 13_00,
     description: "Small gem bag for the mining station",
     squareCatalogId: "",
   },
   {
     id: "gem-bag-large",
-    name: "Gem Mining Bag (Large) — $20",
+    name: "Gem Mining Bag (Large)",
     price: 20_00,
     description: "Large gem bag for the mining station",
     squareCatalogId: "",

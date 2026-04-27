@@ -11,6 +11,9 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status") ?? "all";
   const pavilionId = searchParams.get("pavilionId");
   const date = searchParams.get("date");
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
+  const search = searchParams.get("search")?.trim();
 
   const supabase = getSupabaseAdmin();
 
@@ -28,6 +31,19 @@ export async function GET(req: NextRequest) {
   }
   if (date) {
     query = query.eq("date", date);
+  }
+  if (dateFrom) {
+    query = query.gte("date", dateFrom);
+  }
+  if (dateTo) {
+    query = query.lte("date", dateTo);
+  }
+  if (search) {
+    // Match name, email, or reservation_id (case-insensitive partial)
+    const escaped = search.replace(/[%_,]/g, (c) => `\\${c}`);
+    query = query.or(
+      `guest_name.ilike.%${escaped}%,guest_email.ilike.%${escaped}%,reservation_id.ilike.%${escaped}%`
+    );
   }
 
   const { data: bookings, error } = await query;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { pavilions, Pavilion } from "@/data/pavilions";
 import ReservationModal from "./ReservationModal";
@@ -18,12 +18,25 @@ type ApiPavilion = {
   mapY: number | null;
 };
 
+type SortMode = "default" | "available-today" | "available-weekend" | "capacity";
+
+function nextWeekendDate(): string {
+  const d = new Date();
+  const day = d.getDay(); // 0=Sun..6=Sat
+  // Next Saturday — if today is Sat, use today
+  const daysToSat = day === 6 ? 0 : (6 - day);
+  d.setDate(d.getDate() + daysToSat);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function PavilionMap() {
   const [selected, setSelected] = useState<Pavilion | null>(null);
   const [activeIds, setActiveIds] = useState<Set<string>>(
     new Set(pavilions.map((p) => p.id)),
   );
   const [apiData, setApiData] = useState<Map<string, ApiPavilion>>(new Map());
+  const [bookedByDate, setBookedByDate] = useState<Map<string, Set<string>>>(new Map());
+  const [sortMode, setSortMode] = useState<SortMode>("default");
 
   useEffect(() => {
     fetch("/api/pavilions")
@@ -33,6 +46,36 @@ export default function PavilionMap() {
         setApiData(new Map(list.map((p) => [p.id, p])));
       })
       .catch(() => {/* keep optimistic default */});
+  }, []);
+
+  // Fetch availability for today and the upcoming weekend (Sat) so we can sort cards
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const weekend = nextWeekendDate();
+    const dates = today === weekend ? [today] : [today, weekend];
+
+    Promise.all(
+      pavilions.flatMap((p) =>
+        dates.map((d) =>
+          fetch(`/api/availability?pavilionId=${p.id}&date=${d}`)
+            .then((r) => r.json())
+            .then((j: { date: string; pavilionId: string; bookedSlots: { start: string; end: string }[] }) => ({
+              date: j.date, pavilionId: p.id, count: j.bookedSlots?.length ?? 0,
+            }))
+            .catch(() => ({ date: d, pavilionId: p.id, count: 0 }))
+        )
+      )
+    ).then((rows) => {
+      const map = new Map<string, Set<string>>(); // date -> set of pavilion ids that have ANY booking
+      for (const r of rows) {
+        if (r.count > 0) {
+          const set = map.get(r.date) ?? new Set<string>();
+          set.add(r.pavilionId);
+          map.set(r.date, set);
+        }
+      }
+      setBookedByDate(map);
+    });
   }, []);
 
   function getMerged(p: Pavilion): Pavilion {
@@ -52,6 +95,25 @@ export default function PavilionMap() {
     if (!activeIds.has(p.id)) return;
     setSelected(getMerged(p));
   }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const weekend = nextWeekendDate();
+
+  const sortedPavilions = useMemo(() => {
+    const list = [...pavilions];
+    if (sortMode === "available-today") {
+      const booked = bookedByDate.get(today) ?? new Set();
+      return list.sort((a, b) => Number(booked.has(a.id)) - Number(booked.has(b.id)));
+    }
+    if (sortMode === "available-weekend") {
+      const booked = bookedByDate.get(weekend) ?? new Set();
+      return list.sort((a, b) => Number(booked.has(a.id)) - Number(booked.has(b.id)));
+    }
+    if (sortMode === "capacity") {
+      return list.sort((a, b) => b.capacity - a.capacity);
+    }
+    return list; // default: data order
+  }, [sortMode, bookedByDate, today, weekend]);
 
   return (
     <div id="pavilions" className="scroll-mt-20 space-y-8">
@@ -76,11 +138,28 @@ export default function PavilionMap() {
 
       {/* Pavilion cards — the actual booking UI */}
       <div>
-        <p className="text-teal-600 text-xs uppercase tracking-widest font-bold mb-1">Choose your pavilion</p>
-        <h3 className="text-2xl font-black text-stone-800 mb-4">Available Pavilions</h3>
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+          <div>
+            <p className="text-teal-600 text-xs uppercase tracking-widest font-bold mb-1">Choose your pavilion</p>
+            <h3 className="text-2xl font-black text-stone-800">Available Pavilions</h3>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">Sort by</label>
+            <select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as SortMode)}
+              className="bg-white border-2 border-amber-100 rounded-xl px-3 py-1.5 text-sm font-bold text-stone-700 focus:outline-none focus:ring-2 focus:ring-teal-400"
+            >
+              <option value="default">Featured</option>
+              <option value="available-today">Free today first</option>
+              <option value="available-weekend">Free this weekend first</option>
+              <option value="capacity">Largest capacity first</option>
+            </select>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {pavilions.map((p) => {
+          {sortedPavilions.map((p) => {
             const merged   = getMerged(p);
             const isActive = activeIds.has(p.id);
             const isGames  = p.id === "pavilion-6";

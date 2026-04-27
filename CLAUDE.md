@@ -45,7 +45,7 @@ app/
 ### Data flow for a pavilion booking
 
 1. `ReservationModal.tsx` renders on the public playground page — loads Square Web Payments SDK via `<Script>` CDN tag
-2. On submit → `POST /api/reservation`: server re-validates date (min: May 23 2026, max: 6 months), checks availability, charges Square, inserts into `pavilion_bookings`, sends emails via Resend
+2. On submit → `POST /api/reservation`: server re-validates date (min: May 16 2026, max: 6 months), validates time + day-of-week against `pavilion.schedule`, recomputes total server-side from `pavilion_configs` (with `dayPricing` overrides for Mon–Wed free days), checks availability, charges Square, inserts into `pavilion_bookings`, sends emails via Resend
 3. **Race condition**: availability is checked server-side immediately before the Square charge to prevent double-booking
 4. **If the DB write fails after a successful charge** — the API still returns success and logs the error. Manual reconciliation needed.
 

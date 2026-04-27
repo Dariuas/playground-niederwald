@@ -152,22 +152,32 @@ export function pavilionConfirmationEmail(opts: {
   total: number;
   qrDataUrl: string;
   reservationId: string;
+  partySize?: number;
 }) {
+  const rows: [string, string][] = [
+    ["Reservation ID", esc(opts.reservationId)],
+    ["Pavilion",       esc(opts.pavilionName)],
+    ["Date",           esc(opts.date)],
+    ["Start Time",     esc(opts.time)],
+    ["Duration",       `${opts.duration} hr${opts.duration !== 1 ? "s" : ""}`],
+  ];
+  if (opts.partySize) rows.push(["Party Size", `${opts.partySize} guests`]);
+  rows.push(["Total Charged", `$${opts.total}`]);
+
   const content = `
     ${h2("Pavilion Reserved! 🏡")}
-    ${p(`Hey <strong>${esc(opts.customerName)}</strong>, your pavilion reservation request has been received. We'll confirm your booking within 24 hours.`)}
-    ${infoTable([
-      ["Reservation ID", esc(opts.reservationId)],
-      ["Pavilion", esc(opts.pavilionName)],
-      ["Date", esc(opts.date)],
-      ["Start Time", esc(opts.time)],
-      ["Duration", `${opts.duration} hr${opts.duration !== 1 ? "s" : ""}`],
-      ["Estimated Total", `$${opts.total}`],
-    ])}
+    ${p(`Hey <strong>${esc(opts.customerName)}</strong>, your pavilion is booked and payment has been processed. See y'all at the park!`)}
+    ${infoTable(rows)}
     ${divider()}
     ${qrBlock(opts.qrDataUrl, "Show this when you arrive at your pavilion")}
     ${divider()}
-    ${p("Payment is collected on arrival. If you need to cancel or reschedule, please call us at least 48 hours in advance.", "#6b7280")}
+    <div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:16px 20px;margin:16px 0;">
+      <p style="font-size:12px;font-weight:900;color:#92400e;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">Heads Up</p>
+      <p style="font-size:13px;color:#78350f;margin:0;line-height:1.6;">
+        Pavilion rental does <strong>not</strong> include park entry tickets — each guest needs their own ticket to access the playground, train, and jumping blob. Buy tickets in advance to skip the gate line!
+      </p>
+    </div>
+    ${p("Need to cancel or reschedule? Please call us at least 48 hours in advance.", "#6b7280")}
     ${cta("Get Directions", "https://maps.google.com/?q=7400+Niederwald+Strasse+Niederwald+TX+78640")}
   `;
   return shell(content);
@@ -186,20 +196,25 @@ export function pavilionNotificationEmail(opts: {
   duration: number;
   total: number;
   reservationId: string;
+  partySize?: number;
 }) {
+  const rows: [string, string][] = [
+    ["Reservation ID", esc(opts.reservationId)],
+    ["Pavilion",       esc(opts.pavilionName)],
+    ["Date",           esc(opts.date)],
+    ["Time",           esc(opts.time)],
+    ["Duration",       `${opts.duration} hr${opts.duration !== 1 ? "s" : ""}`],
+  ];
+  if (opts.partySize) rows.push(["Party Size", `${opts.partySize} guests`]);
+  rows.push(
+    ["Charged",  `$${opts.total}`],
+    ["Customer", esc(opts.customerName)],
+    ["Email",    esc(opts.customerEmail)],
+    ["Phone",    esc(opts.customerPhone || "—")],
+  );
   const content = `
-    ${h2("New Pavilion Reservation Request 🏡")}
-    ${infoTable([
-      ["Reservation ID", esc(opts.reservationId)],
-      ["Pavilion", esc(opts.pavilionName)],
-      ["Date", esc(opts.date)],
-      ["Time", esc(opts.time)],
-      ["Duration", `${opts.duration} hr${opts.duration !== 1 ? "s" : ""}`],
-      ["Estimated", `$${opts.total}`],
-      ["Customer", esc(opts.customerName)],
-      ["Email", esc(opts.customerEmail)],
-      ["Phone", esc(opts.customerPhone || "—")],
-    ])}
+    ${h2("New Pavilion Booking 🏡")}
+    ${infoTable(rows)}
   `;
   return shell(content);
 }

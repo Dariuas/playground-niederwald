@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Script from "next/script";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { addons } from "@/data/products";
 
 // ── Square config — set in .env.local ──────────────────────────────
 const SQUARE_APP_ID = process.env.NEXT_PUBLIC_SQUARE_APP_ID ?? "";
@@ -231,6 +232,46 @@ function SquarePaymentForm({
   );
 }
 
+// ── Add-on recommendations strip ───────────────────────────────────
+function AddonRecommendations({
+  cartItemIds,
+}: {
+  cartItemIds: Set<string>;
+}) {
+  const { addItem } = useCart();
+  // Hide ones already in the cart
+  const list = addons.filter((a) => !cartItemIds.has(a.id));
+  if (list.length === 0) return null;
+
+  return (
+    <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 mb-5">
+      <p className="text-amber-800 text-xs uppercase tracking-widest font-black mb-1">⚡ Add to your day</p>
+      <h3 className="text-stone-800 font-black text-lg mb-1">Don&apos;t forget the essentials</h3>
+      <p className="text-stone-500 text-sm mb-4">
+        Pavilion rentals do <strong className="text-stone-700">not</strong> include park entry — every guest needs a ticket. Save by adding now!
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {list.map((a) => (
+          <div key={a.id} className="bg-white border-2 border-amber-100 rounded-xl p-3 flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-stone-800 font-black text-sm leading-tight">{a.name}</p>
+              <p className="text-stone-500 text-xs mt-0.5 line-clamp-2">{a.description}</p>
+              <p className="text-teal-700 font-black text-sm mt-1">${(a.price / 100).toFixed(2)}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => addItem({ id: a.id, name: a.name, price: a.price / 100, category: "Add-on" })}
+              className="bg-teal-700 hover:bg-teal-600 text-white font-black px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider transition-colors whitespace-nowrap"
+            >
+              + Add
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main checkout page ─────────────────────────────────────────────
 export default function CheckoutPage() {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCart();
@@ -238,6 +279,7 @@ export default function CheckoutPage() {
   const [contact, setContact] = useState<ContactInfo>(EMPTY_CONTACT);
   const [orderNumber, setOrderNumber] = useState("");
 
+  const cartItemIds = new Set(items.map((i) => i.id));
   const tax = totalPrice * 0.08;
   const grandTotal = totalPrice + tax;
 
@@ -289,6 +331,8 @@ export default function CheckoutPage() {
                     </div>
                   ))}
                 </div>
+                <AddonRecommendations cartItemIds={cartItemIds} />
+
                 <div className="bg-white border-2 border-amber-100 rounded-2xl p-5 mb-5 space-y-2">
                   <div className="flex justify-between text-sm text-stone-400"><span>Subtotal</span><span>${totalPrice.toFixed(2)}</span></div>
                   <div className="flex justify-between text-sm text-stone-400"><span>Tax (8%)</span><span>${tax.toFixed(2)}</span></div>

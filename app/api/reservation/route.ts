@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     pavilionId, pavilionName,
     date, time, duration, total,
     name, email, phone,
+    partySize, addons,
     squareToken,
   } = await req.json();
 
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest) {
   if (!pavilionId || !pavilionName || !date || !time || !duration || !name || !email) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
+  // squareToken can be the literal "FREE" for $0 day bookings, otherwise a real Square card token
   if (!squareToken) {
     return NextResponse.json({ error: "Payment token required." }, { status: 400 });
   }
@@ -52,6 +54,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unknown pavilion." }, { status: 400 });
   }
 
+  // ── Validate day-of-week + open hours against the pavilion schedule ──
+  const dayOfWeek = bookingDate.getDay(); // 0=Sun..6=Sat
+  if (!staticPavilion.schedule.availableDays.includes(dayOfWeek)) {
+    return NextResponse.json(
+      { error: "This pavilion is closed on the selected day. Please pick another date." },
+      { status: 400 }
+    );
+  }
+  if (time < staticPavilion.schedule.openTime || endTime > staticPavilion.schedule.closeTime) {
+    return NextResponse.json(
+      { error: `Bookings must be between ${staticPavilion.schedule.openTime} and ${staticPavilion.schedule.closeTime}.` },
+      { status: 400 }
+    );
+  }
+
   const { data: cfg } = await supabase
     .from("pavilion_configs")
     .select("first_hour_price_cents, add_hour_price_cents, is_active")
@@ -65,18 +82,38 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const firstHourCents = cfg?.first_hour_price_cents ?? DEFAULT_FIRST_HOUR_CENTS;
-  const addHourCents = cfg?.add_hour_price_cents ?? DEFAULT_ADD_HOUR_CENTS;
+  // Per-day price overrides win over the configured base price.
+  const dayPricing = staticPavilion.schedule.dayPricing[dayOfWeek];
+  const firstHourCents = dayPricing
+    ? dayPricing.firstHour * 100
+    : (cfg?.first_hour_price_cents ?? DEFAULT_FIRST_HOUR_CENTS);
+  const addHourCents = dayPricing
+    ? dayPricing.addHour * 100
+    : (cfg?.add_hour_price_cents ?? DEFAULT_ADD_HOUR_CENTS);
   const serverAmountCents = firstHourCents + Math.max(0, duration - 1) * addHourCents;
 
   const clientAmountCents = Math.round(Number(total) * 100);
   if (Math.abs(serverAmountCents - clientAmountCents) > 1) {
-    console.warn("Reservation total mismatch", { pavilionId, duration, serverAmountCents, clientAmountCents });
+    console.warn("Reservation total mismatch", { pavilionId, duration, dayOfWeek, serverAmountCents, clientAmountCents });
     return NextResponse.json(
       { error: "Pricing mismatch. Please refresh the page and try again." },
       { status: 400 }
     );
   }
+
+  // Validate party size
+  let partySizeValue: number | null = null;
+  if (partySize !== undefined && partySize !== null && partySize !== "") {
+    const n = Number(partySize);
+    if (!Number.isFinite(n) || n < 1 || n > staticPavilion.capacity) {
+      return NextResponse.json(
+        { error: `Party size must be between 1 and ${staticPavilion.capacity}.` },
+        { status: 400 }
+      );
+    }
+    partySizeValue = Math.floor(n);
+  }
+  const addonsValue = Array.isArray(addons) && addons.length ? addons : null;
 
   // ── Availability check (server-side to prevent race conditions) ───
   const { data: conflicts, error: availErr } = await supabase
@@ -100,35 +137,41 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Charge via Square ─────────────────────────────────────────────
+  // ── Charge via Square (skipped for $0 free-day bookings) ──────────
   const amountCents = serverAmountCents;
   const reservationId = "RES-" + Math.floor(100000 + Math.random() * 900000).toString();
 
-  const squareRes = await fetch("https://connect.squareup.com/v2/payments", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
-      "Square-Version": "2024-10-17",
-    },
-    body: JSON.stringify({
-      source_id: squareToken,
-      idempotency_key: randomUUID(),
-      amount_money: { amount: amountCents, currency: "USD" },
-      location_id: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
-      note: `${reservationId} — ${pavilionName} — ${date} ${time}`,
-      buyer_email_address: email,
-    }),
-  });
+  let squarePaymentId: string | null = null;
 
-  const squareData = await squareRes.json();
+  if (amountCents > 0) {
+    if (squareToken === "FREE") {
+      return NextResponse.json({ error: "Invalid payment token for paid booking." }, { status: 400 });
+    }
+    const squareRes = await fetch("https://connect.squareup.com/v2/payments", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+        "Square-Version": "2024-10-17",
+      },
+      body: JSON.stringify({
+        source_id: squareToken,
+        idempotency_key: randomUUID(),
+        amount_money: { amount: amountCents, currency: "USD" },
+        location_id: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
+        note: `${reservationId} — ${pavilionName} — ${date} ${time}`,
+        buyer_email_address: email,
+      }),
+    });
 
-  if (!squareRes.ok) {
-    const msg = squareData.errors?.[0]?.detail ?? "Payment failed. Please try again.";
-    return NextResponse.json({ error: msg }, { status: squareRes.status });
+    const squareData = await squareRes.json();
+
+    if (!squareRes.ok) {
+      const msg = squareData.errors?.[0]?.detail ?? "Payment failed. Please try again.";
+      return NextResponse.json({ error: msg }, { status: squareRes.status });
+    }
+    squarePaymentId = squareData.payment.id;
   }
-
-  const squarePaymentId: string = squareData.payment.id;
 
   // ── Write booking to DB ───────────────────────────────────────────
   const { error: dbError } = await supabase.from("pavilion_bookings").insert({
@@ -143,6 +186,8 @@ export async function POST(req: NextRequest) {
     guest_email:       email,
     guest_phone:       phone || null,
     total_cents:       amountCents,
+    party_size:        partySizeValue,
+    addons:            addonsValue,
     status:            "confirmed",
     square_payment_id: squarePaymentId,
   });
@@ -161,7 +206,7 @@ export async function POST(req: NextRequest) {
     try {
       const { error: reconErr } = await supabase.from("failed_reservations").insert({
         reservation_id:    reservationId,
-        square_payment_id: squarePaymentId,
+        square_payment_id: squarePaymentId ?? "FREE-NO-CHARGE",
         pavilion_id:       pavilionId,
         pavilion_name:     pavilionName,
         date,
@@ -207,15 +252,16 @@ export async function POST(req: NextRequest) {
           date,
           time,
           duration,
-          total,
+          total: serverAmountCents / 100,
           qrDataUrl,
           reservationId,
+          partySize: partySizeValue ?? undefined,
         }),
       }),
       getResend().emails.send({
         from: FROM,
         to: NOTIFY_EMAIL,
-        subject: `[Pavilion] ${pavilionName} — ${date} — ${name} — $${total}`,
+        subject: `[Pavilion] ${pavilionName} — ${date} — ${name} — $${(serverAmountCents / 100).toFixed(2)}`,
         html: pavilionNotificationEmail({
           customerName: name,
           customerEmail: email,
@@ -224,8 +270,9 @@ export async function POST(req: NextRequest) {
           date,
           time,
           duration,
-          total,
+          total: serverAmountCents / 100,
           reservationId,
+          partySize: partySizeValue ?? undefined,
         }),
       }),
     ]).catch((err) => {

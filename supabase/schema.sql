@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS pavilion_bookings (
   guest_email        TEXT        NOT NULL,
   guest_phone        TEXT,
   total_cents        INTEGER     NOT NULL CHECK (total_cents >= 0),
+  party_size         INTEGER,                                  -- # of guests expected
+  addons             JSONB,                                    -- impulse-buy add-ons captured at booking
   status             TEXT        NOT NULL DEFAULT 'confirmed'
                                  CHECK (status IN ('confirmed','cancelled','refunded')),
   square_payment_id  TEXT,
@@ -26,8 +28,10 @@ CREATE TABLE IF NOT EXISTS pavilion_bookings (
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Migration: add square_refund_id if upgrading from an older schema
+-- Migration: add columns if upgrading from an older schema
 ALTER TABLE pavilion_bookings ADD COLUMN IF NOT EXISTS square_refund_id TEXT;
+ALTER TABLE pavilion_bookings ADD COLUMN IF NOT EXISTS party_size INTEGER;
+ALTER TABLE pavilion_bookings ADD COLUMN IF NOT EXISTS addons JSONB;
 
 -- Reconciliation log: charges that succeeded in Square but failed to insert
 -- a booking row. Surface these in admin so staff can manually create the
