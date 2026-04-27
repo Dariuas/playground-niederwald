@@ -20,10 +20,36 @@ CREATE TABLE IF NOT EXISTS pavilion_bookings (
   status             TEXT        NOT NULL DEFAULT 'confirmed'
                                  CHECK (status IN ('confirmed','cancelled','refunded')),
   square_payment_id  TEXT,
+  square_refund_id   TEXT,
   notes              TEXT,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Migration: add square_refund_id if upgrading from an older schema
+ALTER TABLE pavilion_bookings ADD COLUMN IF NOT EXISTS square_refund_id TEXT;
+
+-- Reconciliation log: charges that succeeded in Square but failed to insert
+-- a booking row. Surface these in admin so staff can manually create the
+-- booking or refund the customer.
+CREATE TABLE IF NOT EXISTS failed_reservations (
+  id                 UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  reservation_id     TEXT        NOT NULL,
+  square_payment_id  TEXT        NOT NULL,
+  pavilion_id        TEXT        NOT NULL,
+  pavilion_name      TEXT,
+  date               DATE,
+  start_time         TIME,
+  duration_hours     INTEGER,
+  guest_name         TEXT,
+  guest_email        TEXT,
+  guest_phone        TEXT,
+  total_cents        INTEGER,
+  db_error           TEXT,
+  resolved           BOOLEAN     NOT NULL DEFAULT false,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE failed_reservations ENABLE ROW LEVEL SECURITY;
 
 -- Index for fast availability queries
 CREATE INDEX IF NOT EXISTS idx_bookings_pavilion_date
@@ -113,10 +139,12 @@ ALTER TABLE pavilion_configs   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products           ENABLE ROW LEVEL SECURITY;
 
 -- Anon can read active pavilion configs (needed for pricing display)
+DROP POLICY IF EXISTS "public read pavilion_configs" ON pavilion_configs;
 CREATE POLICY "public read pavilion_configs"
   ON pavilion_configs FOR SELECT USING (true);
 
 -- Anon can read active products (needed for store display)
+DROP POLICY IF EXISTS "public read active products" ON products;
 CREATE POLICY "public read active products"
   ON products FOR SELECT USING (is_active = true);
 
@@ -131,5 +159,6 @@ CREATE TABLE IF NOT EXISTS site_config (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE site_config ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read site_config" ON site_config;
 CREATE POLICY "public read site_config"
   ON site_config FOR SELECT USING (true);

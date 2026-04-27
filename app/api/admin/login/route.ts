@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sessionToken, COOKIE } from "@/lib/adminAuth";
+import { sessionToken, COOKIE, verifyAdminPassword } from "@/lib/adminAuth";
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json();
 
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
+  if (!verifyAdminPassword(password)) {
     return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
 

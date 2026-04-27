@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (dbError) {
-    // Payment succeeded but DB write failed — log it for manual recovery
+    // Payment succeeded but DB write failed — record for manual reconciliation
     console.error("DB write failed after successful payment:", {
       reservationId,
       squarePaymentId,
@@ -120,7 +120,23 @@ export async function POST(req: NextRequest) {
       guest: email,
       dbError,
     });
-    // Still return success to the user — the payment went through
+    await supabase.from("failed_reservations").insert({
+      reservation_id:    reservationId,
+      square_payment_id: squarePaymentId,
+      pavilion_id:       pavilionId,
+      pavilion_name:     pavilionName,
+      date,
+      start_time:        time,
+      duration_hours:    duration,
+      guest_name:        name,
+      guest_email:       email,
+      guest_phone:       phone || null,
+      total_cents:       amountCents,
+      db_error:          dbError.message ?? String(dbError),
+    }).then(({ error }) => {
+      if (error) console.error("failed_reservations insert also failed:", error);
+    });
+    // Still return success — payment went through and we have a Square ID for recovery
   }
 
   // ── Send confirmation emails ──────────────────────────────────────

@@ -4,6 +4,9 @@ import { pavilions } from "@/data/pavilions";
 import { isAuthenticated } from "@/lib/adminAuth";
 
 export async function GET(req: NextRequest) {
+  if (!(await isAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") ?? "all";
   const pavilionId = searchParams.get("pavilionId");
