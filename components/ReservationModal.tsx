@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Script from "next/script";
+import { useRouter } from "next/navigation";
 import { Pavilion } from "@/data/pavilions";
+import { useCart } from "@/context/CartContext";
+
+const CHILD_TICKET_PRICE = 10; // $10/each — keep in sync with /playground
 
 const SQUARE_APP_ID      = process.env.NEXT_PUBLIC_SQUARE_APP_ID ?? "";
 const SQUARE_LOCATION_ID = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? "";
@@ -37,6 +41,8 @@ function inputCls() {
 interface Props { pavilion: Pavilion; onClose: () => void; }
 
 export default function ReservationModal({ pavilion, onClose }: Props) {
+  const router = useRouter();
+  const { addItem } = useCart();
   const [step, setStep] = useState<Step>("schedule");
 
   // ── Live pricing (falls back to static data) ──
@@ -271,6 +277,16 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
           ══════════════════════════════════════════ */}
           {step === "schedule" && (
             <div className="space-y-4">
+              {/* Required-tickets banner — visible on the very first step */}
+              <div className="bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3">
+                <p className="text-red-700 text-[10px] uppercase tracking-widest font-black mb-1">⚠ Important</p>
+                <p className="text-stone-700 text-sm leading-snug">
+                  Pavilion rentals only cover the shaded space.{" "}
+                  <strong className="text-red-700">Park entry tickets are required for every guest</strong>{" "}
+                  — even with a pavilion. You&apos;ll be prompted to buy tickets right after booking.
+                </p>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1">Date *</label>
                 <input type="date" required value={date}
@@ -509,8 +525,8 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
               CONFIRMED
           ══════════════════════════════════════════ */}
           {step === "confirmed" && (
-            <div className="text-center py-6">
-              <div className="text-5xl mb-4">🤠</div>
+            <div className="text-center py-4">
+              <div className="text-5xl mb-3">🤠</div>
               <h3 className="text-xl font-black text-stone-800 mb-2">Yeehaw! You&apos;re booked!</h3>
               <p className="text-stone-500 text-sm">{pavilion.name}</p>
               <p className="text-stone-500 text-sm">{date} at {time} · {duration} hr{duration !== 1 ? "s" : ""}</p>
@@ -522,10 +538,45 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                 Confirmation and QR code sent to{" "}
                 <strong className="text-stone-600">{email}</strong>.
               </p>
-              <button onClick={onClose}
-                className="mt-6 bg-teal-700 hover:bg-teal-600 text-white font-black py-2 px-6 rounded-xl transition-colors uppercase text-sm tracking-wider">
-                Done
-              </button>
+
+              {/* Required park-entry tickets prompt */}
+              <div className="mt-6 bg-red-50 border-2 border-red-300 rounded-2xl p-4 text-left">
+                <p className="text-red-700 text-[10px] uppercase tracking-widest font-black mb-1">⚠ One more step</p>
+                <h4 className="text-stone-800 font-black text-base leading-tight mb-1">
+                  Buy park entry tickets for your guests
+                </h4>
+                <p className="text-stone-600 text-xs leading-snug mb-3">
+                  Your pavilion is reserved, but each guest still needs a park entry ticket
+                  ({partySize ? `${partySize} guests` : "you"} expected · ${CHILD_TICKET_PRICE} per child).
+                  Add tickets now and skip the line at the gate.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const qty = Math.max(1, Number(partySize) || 1);
+                    for (let i = 0; i < qty; i++) {
+                      addItem({
+                        id: "child-entry-addon",
+                        name: "Child Entry Ticket",
+                        price: CHILD_TICKET_PRICE,
+                        category: "Park Entry",
+                      });
+                    }
+                    onClose();
+                    router.push("/checkout");
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-2.5 rounded-xl transition-colors uppercase text-sm tracking-wider"
+                >
+                  + Add {Math.max(1, Number(partySize) || 1)} Ticket{Number(partySize) === 1 ? "" : "s"} to Cart
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full mt-2 text-stone-400 hover:text-stone-600 text-xs font-bold uppercase tracking-wider transition-colors"
+                >
+                  Skip — I&apos;ll buy tickets at the gate
+                </button>
+              </div>
             </div>
           )}
 
