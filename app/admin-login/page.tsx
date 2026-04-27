@@ -34,7 +34,9 @@ export default function AdminLoginPage() {
     });
 
     if (res.ok) {
-      router.push("/admin");
+      // Hard nav so the browser issues a fresh request with the cookie
+      // we just received in the Set-Cookie header.
+      window.location.href = "/admin";
     } else {
       setError("Incorrect password. Try again.");
       setLoading(false);
