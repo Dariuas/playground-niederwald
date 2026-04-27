@@ -239,36 +239,68 @@ function AddonRecommendations({
   cartItemIds: Set<string>;
 }) {
   const { addItem } = useCart();
-  // Hide ones already in the cart
-  const list = addons.filter((a) => !cartItemIds.has(a.id));
-  if (list.length === 0) return null;
+  // Split kids tickets out — those are REQUIRED, not "recommended"
+  const required = addons.filter((a) => a.id === "child-entry-addon" && !cartItemIds.has(a.id));
+  const optional = addons.filter((a) => a.id !== "child-entry-addon" && !cartItemIds.has(a.id));
+
+  if (required.length === 0 && optional.length === 0) return null;
 
   return (
-    <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 mb-5">
-      <p className="text-amber-800 text-xs uppercase tracking-widest font-black mb-1">⚡ Add to your day</p>
-      <h3 className="text-stone-800 font-black text-lg mb-1">Don&apos;t forget the essentials</h3>
-      <p className="text-stone-500 text-sm mb-4">
-        Pavilion rentals do <strong className="text-stone-700">not</strong> include park entry — every guest needs a ticket. Save by adding now!
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {list.map((a) => (
-          <div key={a.id} className="bg-white border-2 border-amber-100 rounded-xl p-3 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-stone-800 font-black text-sm leading-tight">{a.name}</p>
-              <p className="text-stone-500 text-xs mt-0.5 line-clamp-2">{a.description}</p>
-              <p className="text-teal-700 font-black text-sm mt-1">${(a.price / 100).toFixed(2)}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => addItem({ id: a.id, name: a.name, price: a.price / 100, category: "Add-on" })}
-              className="bg-teal-700 hover:bg-teal-600 text-white font-black px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider transition-colors whitespace-nowrap"
-            >
-              + Add
-            </button>
+    <>
+      {required.length > 0 && (
+        <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 mb-5">
+          <p className="text-red-700 text-xs uppercase tracking-widest font-black mb-1">⚠ Required</p>
+          <h3 className="text-stone-800 font-black text-lg mb-1">Park entry tickets</h3>
+          <p className="text-stone-600 text-sm mb-4">
+            Every kid needs an entry ticket — <strong className="text-red-700">even with a pavilion rental.</strong>{" "}
+            The pavilion reservation only covers the shaded space. Add a ticket for each child now.
+          </p>
+          <div className="space-y-3">
+            {required.map((a) => (
+              <div key={a.id} className="bg-white border-2 border-red-200 rounded-xl p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-stone-800 font-black text-sm leading-tight">{a.name}</p>
+                  <p className="text-stone-500 text-xs mt-0.5">{a.description}</p>
+                  <p className="text-teal-700 font-black text-sm mt-1">${(a.price / 100).toFixed(2)} each</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => addItem({ id: a.id, name: a.name, price: a.price / 100, category: "Park Entry" })}
+                  className="bg-red-600 hover:bg-red-500 text-white font-black px-4 py-2 rounded-lg text-xs uppercase tracking-wider transition-colors whitespace-nowrap"
+                >
+                  + Add Ticket
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+      )}
+
+      {optional.length > 0 && (
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-5 mb-5">
+          <p className="text-amber-800 text-xs uppercase tracking-widest font-black mb-1">⚡ Add to your day</p>
+          <h3 className="text-stone-800 font-black text-lg mb-3">Make it extra fun</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {optional.map((a) => (
+              <div key={a.id} className="bg-white border-2 border-amber-100 rounded-xl p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-stone-800 font-black text-sm leading-tight">{a.name}</p>
+                  <p className="text-stone-500 text-xs mt-0.5 line-clamp-2">{a.description}</p>
+                  <p className="text-teal-700 font-black text-sm mt-1">${(a.price / 100).toFixed(2)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => addItem({ id: a.id, name: a.name, price: a.price / 100, category: "Add-on" })}
+                  className="bg-teal-700 hover:bg-teal-600 text-white font-black px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider transition-colors whitespace-nowrap"
+                >
+                  + Add
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

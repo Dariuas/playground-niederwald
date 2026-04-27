@@ -104,12 +104,17 @@ export default function PlaygroundPage() {
                 Perfect for birthdays, team building, bachelor/bachelorette parties, and youth groups.
               </p>
               <div className="flex flex-wrap gap-3 mb-4">
-                <div className="bg-white border-2 border-orange-200 rounded-xl px-4 py-3 text-center min-w-[100px]">
-                  <p className="text-orange-400 text-xs uppercase tracking-wider font-bold mb-0.5">Equipment</p>
-                  <p className="text-orange-600 font-black text-2xl">$50</p>
+                <div className="bg-white border-2 border-orange-200 rounded-xl px-4 py-3 text-center min-w-[120px]">
+                  <p className="text-orange-400 text-xs uppercase tracking-wider font-bold mb-0.5">Paintball</p>
+                  <p className="text-orange-600 font-black text-2xl">$15–50</p>
                   <p className="text-stone-400 text-xs">per person</p>
                 </div>
-                <div className="bg-white border-2 border-orange-200 rounded-xl px-4 py-3 text-center min-w-[100px]">
+                <div className="bg-white border-2 border-orange-200 rounded-xl px-4 py-3 text-center min-w-[120px]">
+                  <p className="text-orange-400 text-xs uppercase tracking-wider font-bold mb-0.5">Gellyball</p>
+                  <p className="text-orange-600 font-black text-2xl">$15</p>
+                  <p className="text-stone-400 text-xs">per person</p>
+                </div>
+                <div className="bg-white border-2 border-orange-200 rounded-xl px-4 py-3 text-center min-w-[120px]">
                   <p className="text-orange-400 text-xs uppercase tracking-wider font-bold mb-0.5">Ammo</p>
                   <p className="text-orange-600 font-black text-2xl">+ Cost</p>
                   <p className="text-stone-400 text-xs">priced separately</p>
