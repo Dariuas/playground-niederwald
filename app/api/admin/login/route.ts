@@ -10,16 +10,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
 
-  const token = sessionToken();
-  console.log("[auth] issuing token", {
-    tokenLen: token.length,
-    tokenPrefix: token.slice(0, 8),
-    hasHashEnv: !!process.env.ADMIN_PASSWORD_HASH,
-    hasPlainEnv: !!process.env.ADMIN_PASSWORD,
-    hasSecret: !!process.env.NEXTAUTH_SECRET && process.env.NEXTAUTH_SECRET !== "dev-secret",
-  });
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(COOKIE, token, {
+  res.cookies.set(COOKIE, sessionToken(), {
     httpOnly: true,
     secure:   process.env.NODE_ENV === "production",
     sameSite: "lax",

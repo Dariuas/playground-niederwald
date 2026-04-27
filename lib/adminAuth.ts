@@ -1,9 +1,10 @@
-import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 const COOKIE = "admin_session";
 const SCRYPT_KEYLEN = 64;
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 function getSecret(): string {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -23,7 +24,6 @@ export function hashPassword(plaintext: string): string {
   return `${salt.toString("hex")}:${hash.toString("hex")}`;
 }
 
-/** Constant-time compare a plaintext attempt against a stored "salt:hash". */
 function verifyScrypt(plaintext: string, stored: string): boolean {
   const [saltHex, hashHex] = stored.split(":");
   if (!saltHex || !hashHex) return false;
@@ -42,8 +42,7 @@ function verifyScrypt(plaintext: string, stored: string): boolean {
 
 /**
  * Verify a password attempt against the configured admin credential.
- * Prefers ADMIN_PASSWORD_HASH (scrypt). Falls back to ADMIN_PASSWORD plaintext
- * for backward compatibility — log a warning when that path is taken.
+ * Prefers ADMIN_PASSWORD_HASH (scrypt). Falls back to ADMIN_PASSWORD plaintext.
  */
 export function verifyAdminPassword(attempt: string): boolean {
   if (!attempt) return false;
@@ -52,10 +51,6 @@ export function verifyAdminPassword(attempt: string): boolean {
 
   const plain = process.env.ADMIN_PASSWORD;
   if (plain) {
-    if (process.env.NODE_ENV === "production") {
-      console.warn("Using legacy ADMIN_PASSWORD plaintext — set ADMIN_PASSWORD_HASH to upgrade.");
-    }
-    // Constant-time string compare
     const a = Buffer.from(attempt);
     const b = Buffer.from(plain);
     if (a.length !== b.length) return false;
@@ -64,38 +59,38 @@ export function verifyAdminPassword(attempt: string): boolean {
   return false;
 }
 
-/** Stable session token derived from the configured credential + secret. */
-export function sessionToken(): string {
-  const credentialMaterial =
-    process.env.ADMIN_PASSWORD_HASH ?? process.env.ADMIN_PASSWORD ?? "";
-  return createHash("sha256")
-    .update(`${credentialMaterial}:${getSecret()}`)
-    .digest("hex");
+function sign(payload: string): string {
+  return createHmac("sha256", getSecret()).update(payload).digest("hex");
 }
 
-/** Verify the request cookie. Returns true if valid. */
+/** Issue a fresh session cookie value: "v1.<expMs>.<hmac>". */
+export function sessionToken(): string {
+  const exp = Date.now() + SESSION_TTL_MS;
+  const payload = `v1.${exp}`;
+  return `${payload}.${sign(payload)}`;
+}
+
+/** Verify the request cookie. Returns true if valid and unexpired. */
 export async function isAuthenticated(): Promise<boolean> {
   const jar = await cookies();
   const value = jar.get(COOKIE)?.value;
-  if (!value) {
-    console.log("[auth] no cookie present");
-    return false;
-  }
-  const expected = sessionToken();
-  const ok = value.length === expected.length &&
-    timingSafeEqual(Buffer.from(value), Buffer.from(expected));
-  if (!ok) {
-    console.log("[auth] mismatch", {
-      cookieLen: value.length,
-      expectedLen: expected.length,
-      cookiePrefix: value.slice(0, 8),
-      expectedPrefix: expected.slice(0, 8),
-      hasHashEnv: !!process.env.ADMIN_PASSWORD_HASH,
-      hasPlainEnv: !!process.env.ADMIN_PASSWORD,
-      hasSecret: !!process.env.NEXTAUTH_SECRET && process.env.NEXTAUTH_SECRET !== "dev-secret",
-    });
-  }
-  return ok;
+  if (!value) return false;
+
+  const lastDot = value.lastIndexOf(".");
+  if (lastDot <= 0) return false;
+  const payload = value.slice(0, lastDot);
+  const sig = value.slice(lastDot + 1);
+
+  if (!payload.startsWith("v1.")) return false;
+
+  const expected = sign(payload);
+  if (sig.length !== expected.length) return false;
+  if (!timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex"))) return false;
+
+  const exp = Number(payload.slice(3));
+  if (!Number.isFinite(exp) || exp < Date.now()) return false;
+
+  return true;
 }
 
 /** Call in server components / route handlers — redirects if not authed. */
