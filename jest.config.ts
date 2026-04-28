@@ -14,6 +14,7 @@ const config: Config = {
   // next/jest wraps this config, so we declare it here; the wrapper adds
   // Next.js-specific transforms on top.
   testMatch: ["**/__tests__/**/*.test.ts", "**/__tests__/**/*.test.tsx"],
+  testPathIgnorePatterns: ["/node_modules/", "/\\.next/", "/\\.claude/"],
   collectCoverageFrom: ["app/api/**/*.ts", "lib/**/*.ts"],
 };
 

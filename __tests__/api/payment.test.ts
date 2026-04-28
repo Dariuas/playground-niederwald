@@ -33,6 +33,21 @@ jest.mock("@/lib/qrcode", () => ({
 import { POST } from "@/app/api/payment/route";
 
 // ---------------------------------------------------------------------------
+// Test fixtures
+// ---------------------------------------------------------------------------
+
+// park-entry is $10.00 in data/products.ts. With 8% tax, 1 unit = $10.80 = 1080¢.
+const ONE_PARK_ENTRY = { id: "park-entry", quantity: 1 };
+const ONE_PARK_ENTRY_TOTAL_CENTS = 1080; // 1000 subtotal + 80 tax
+
+// 2 park-entry + 1 unlimited-train = 2000 + 500 = 2500 subtotal, +200 tax = 2700
+const MIXED_CART = [
+  { id: "park-entry", quantity: 2 },
+  { id: "unlimited-train", quantity: 1 },
+];
+const MIXED_CART_TOTAL_CENTS = 2700;
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -92,7 +107,7 @@ describe("POST /api/payment", () => {
 
   describe("validation", () => {
     it("returns 400 when token is missing", async () => {
-      const req = buildRequest({ amountCents: 1000 }); // no token
+      const req = buildRequest({ amountCents: 1000, items: [ONE_PARK_ENTRY] });
       const res = await POST(req);
 
       expect(res.status).toBe(400);
@@ -102,7 +117,7 @@ describe("POST /api/payment", () => {
     });
 
     it("returns 400 when amountCents is missing", async () => {
-      const req = buildRequest({ token: "cnon:card-nonce-ok" }); // no amount
+      const req = buildRequest({ token: "cnon:card-nonce-ok", items: [ONE_PARK_ENTRY] });
       const res = await POST(req);
 
       expect(res.status).toBe(400);
@@ -110,8 +125,53 @@ describe("POST /api/payment", () => {
       expect(body).toHaveProperty("error");
     });
 
-    it("returns 400 when both token and amountCents are missing", async () => {
-      const req = buildRequest({});
+    it("returns 400 when items array is empty", async () => {
+      const req = buildRequest({
+        token: "cnon:card-nonce-ok",
+        amountCents: 1000,
+        items: [],
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toMatch(/cart/i);
+    });
+
+    it("returns 400 when an item id is unknown", async () => {
+      const req = buildRequest({
+        token: "cnon:card-nonce-ok",
+        amountCents: 1000,
+        items: [{ id: "not-a-real-thing", quantity: 1 }],
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toMatch(/unknown/i);
+    });
+
+    it("returns 400 when the client-supplied total disagrees with the server recompute", async () => {
+      // park-entry × 1 = $10.00 + 8% tax = $10.80 = 1080¢. Send 100¢ instead.
+      const req = buildRequest({
+        token: "cnon:card-nonce-ok",
+        amountCents: 100,
+        items: [ONE_PARK_ENTRY],
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toMatch(/pricing/i);
+    });
+
+    it("returns 400 when an email address is malformed", async () => {
+      const req = buildRequest({
+        token: "cnon:card-nonce-ok",
+        amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+        items: [ONE_PARK_ENTRY],
+        customerEmail: "not-an-email",
+      });
       const res = await POST(req);
 
       expect(res.status).toBe(400);
@@ -126,13 +186,10 @@ describe("POST /api/payment", () => {
 
       const req = buildRequest({
         token: "cnon:card-nonce-ok",
-        amountCents: 2500,
-        note: "Test purchase",
+        amountCents: MIXED_CART_TOTAL_CENTS,
+        items: MIXED_CART,
         customerName: "Jane Doe",
         customerEmail: "jane@example.com",
-        items: [{ name: "Day Pass", quantity: 2 }],
-        totalPrice: 23.15,
-        tax: 1.85,
       });
 
       const res = await POST(req);
@@ -149,7 +206,11 @@ describe("POST /api/payment", () => {
     it("includes a 6-digit numeric order number with the PN- prefix", async () => {
       mockFetch(squareSuccessPayload());
 
-      const req = buildRequest({ token: "cnon:card-nonce-ok", amountCents: 500 });
+      const req = buildRequest({
+        token: "cnon:card-nonce-ok",
+        amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+        items: [ONE_PARK_ENTRY],
+      });
       const res = await POST(req);
       const { orderNumber } = await res.json();
 
@@ -160,12 +221,13 @@ describe("POST /api/payment", () => {
   // ---- 3. Correct payload sent to Square -----------------------------------
 
   describe("Square request payload", () => {
-    it("sends the correct amount, currency, source_id, and location_id", async () => {
+    it("sends the server-recomputed amount, currency, source_id, and location_id", async () => {
       const fetchSpy = mockFetch(squareSuccessPayload());
 
       const req = buildRequest({
         token: "cnon:card-nonce-ok",
-        amountCents: 3750,
+        amountCents: MIXED_CART_TOTAL_CENTS,
+        items: MIXED_CART,
       });
 
       await POST(req);
@@ -182,10 +244,10 @@ describe("POST /api/payment", () => {
       expect(headers["Content-Type"]).toBe("application/json");
       expect(headers["Square-Version"]).toBe("2024-10-17");
 
-      // Verify body
+      // Verify body — amount sent to Square is the server-recomputed grand total.
       const sentBody = JSON.parse(init.body as string);
       expect(sentBody.source_id).toBe("cnon:card-nonce-ok");
-      expect(sentBody.amount_money).toEqual({ amount: 3750, currency: "USD" });
+      expect(sentBody.amount_money).toEqual({ amount: MIXED_CART_TOTAL_CENTS, currency: "USD" });
       expect(sentBody.location_id).toBe("TEST_LOCATION_ID");
 
       // idempotency_key must be present and look like a UUID
@@ -201,7 +263,11 @@ describe("POST /api/payment", () => {
 
       const fetchSpy = jest.spyOn(global, "fetch");
 
-      const body = { token: "cnon:card-nonce-ok", amountCents: 100 };
+      const body = {
+        token: "cnon:card-nonce-ok",
+        amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+        items: [ONE_PARK_ENTRY],
+      };
       await POST(buildRequest(body));
       await POST(buildRequest(body));
 
@@ -214,7 +280,13 @@ describe("POST /api/payment", () => {
     it("uses a default note containing the order number when note is omitted", async () => {
       const fetchSpy = mockFetch(squareSuccessPayload());
 
-      await POST(buildRequest({ token: "cnon:card-nonce-ok", amountCents: 100 }));
+      await POST(
+        buildRequest({
+          token: "cnon:card-nonce-ok",
+          amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+          items: [ONE_PARK_ENTRY],
+        })
+      );
 
       const sentBody = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
       expect(sentBody.note).toMatch(/^The Playground @niederwald — PN-\d{6}$/);
@@ -224,7 +296,12 @@ describe("POST /api/payment", () => {
       const fetchSpy = mockFetch(squareSuccessPayload());
 
       await POST(
-        buildRequest({ token: "cnon:card-nonce-ok", amountCents: 100, note: "Custom note" })
+        buildRequest({
+          token: "cnon:card-nonce-ok",
+          amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+          items: [ONE_PARK_ENTRY],
+          note: "Custom note",
+        })
       );
 
       const sentBody = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
@@ -249,7 +326,11 @@ describe("POST /api/payment", () => {
         402
       );
 
-      const req = buildRequest({ token: "cnon:card-nonce-ok", amountCents: 1000 });
+      const req = buildRequest({
+        token: "cnon:card-nonce-ok",
+        amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+        items: [ONE_PARK_ENTRY],
+      });
       const res = await POST(req);
 
       expect(res.status).toBe(402);
@@ -260,7 +341,11 @@ describe("POST /api/payment", () => {
     it("falls back to a generic error message when Square provides no error detail", async () => {
       mockFetch({ errors: [] }, 500);
 
-      const req = buildRequest({ token: "cnon:card-nonce-ok", amountCents: 1000 });
+      const req = buildRequest({
+        token: "cnon:card-nonce-ok",
+        amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+        items: [ONE_PARK_ENTRY],
+      });
       const res = await POST(req);
 
       expect(res.status).toBe(500);
@@ -277,7 +362,8 @@ describe("POST /api/payment", () => {
 
       const req = buildRequest({
         token: "cnon:card-nonce-ok",
-        amountCents: 1000,
+        amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+        items: [ONE_PARK_ENTRY],
         customerEmail: "user@example.com",
       });
 
@@ -300,12 +386,10 @@ describe("POST /api/payment", () => {
 
       const req = buildRequest({
         token: "cnon:card-nonce-ok",
-        amountCents: 1500,
+        amountCents: MIXED_CART_TOTAL_CENTS,
+        items: MIXED_CART,
         customerName: "Alice",
         customerEmail: "alice@example.com",
-        items: [{ name: "Wristband", quantity: 1 }],
-        totalPrice: 13.89,
-        tax: 1.11,
       });
 
       await POST(req);
@@ -318,7 +402,11 @@ describe("POST /api/payment", () => {
       mockEmailSend.mockClear();
 
       // No customerEmail in payload
-      const req = buildRequest({ token: "cnon:card-nonce-ok", amountCents: 1500 });
+      const req = buildRequest({
+        token: "cnon:card-nonce-ok",
+        amountCents: ONE_PARK_ENTRY_TOTAL_CENTS,
+        items: [ONE_PARK_ENTRY],
+      });
       await POST(req);
 
       expect(mockEmailSend).not.toHaveBeenCalled();

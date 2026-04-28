@@ -60,7 +60,7 @@ function SquarePaymentForm({
   grandTotal: number;
   onSuccess: (orderNumber: string) => void;
   onBack: () => void;
-  items: { name: string; quantity: number; price: number }[];
+  items: { id: string; name: string; quantity: number; price: number }[];
   totalPrice: number;
   tax: number;
   customerName: string;
@@ -422,7 +422,7 @@ export default function CheckoutPage() {
             grandTotal={grandTotal}
             tax={tax}
             totalPrice={totalPrice}
-            items={items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price }))}
+            items={items.map((i) => ({ id: i.id, name: i.name, quantity: i.quantity, price: i.price }))}
             customerName={contact.name}
             customerEmail={contact.email}
             onSuccess={(num) => { clearCart(); setOrderNumber(num); setStep("confirmation"); }}
