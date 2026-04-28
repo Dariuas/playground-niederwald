@@ -249,11 +249,11 @@ function AddonRecommendations({
     <>
       {required.length > 0 && (
         <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 mb-5">
-          <p className="text-red-700 text-xs uppercase tracking-widest font-black mb-1">⚠ Required</p>
+          <p className="text-red-700 text-xs uppercase tracking-widest font-black mb-1">⚠ Required for kids ages 3–12</p>
           <h3 className="text-stone-800 font-black text-lg mb-1">Park entry tickets</h3>
           <p className="text-stone-600 text-sm mb-4">
-            Every kid needs an entry ticket — <strong className="text-red-700">even with a pavilion rental.</strong>{" "}
-            The pavilion reservation only covers the shaded space. Add a ticket for each child now.
+            Every kid ages 3–12 needs an entry ticket — <strong className="text-red-700">even with a pavilion rental.</strong>{" "}
+            Adults and kids under 3 enter free. Add a ticket for each child now.
           </p>
           <div className="space-y-3">
             {required.map((a) => (

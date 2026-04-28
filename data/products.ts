@@ -24,7 +24,7 @@ export const addons: Addon[] = [
     id: "child-entry-addon",
     name: "Child Entry Ticket",
     price: 10_00,
-    description: "Ages 3–12 — playground, train rides, and jumping blob included. Buy one for each guest!",
+    description: "Required for ages 3–12. Adults & kids under 3 enter free. Includes playground, train rides, and the jumping blob.",
     squareCatalogId: "",
   },
   {

@@ -182,13 +182,13 @@ export function pavilionConfirmationEmail(opts: {
     ? `<div style="background:#ecfdf5;border:2px solid #a7f3d0;border-radius:12px;padding:16px 20px;margin:16px 0;">
         <p style="font-size:12px;font-weight:900;color:#047857;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">You're set</p>
         <p style="font-size:13px;color:#065f46;margin:0;line-height:1.6;">
-          You bought <strong>${childTickets.qty} park entry ticket${childTickets.qty !== 1 ? "s" : ""}</strong> with this booking. Bring extra guests? Add tickets at the gate.
+          You bought <strong>${childTickets.qty} park entry ticket${childTickets.qty !== 1 ? "s" : ""}</strong> for kids ages 3–12. Adults and kids under 3 enter free. Bringing more kids? Add tickets at the gate.
         </p>
       </div>`
     : `<div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:16px 20px;margin:16px 0;">
         <p style="font-size:12px;font-weight:900;color:#92400e;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 8px;">Heads Up</p>
         <p style="font-size:13px;color:#78350f;margin:0;line-height:1.6;">
-          Pavilion rental does <strong>not</strong> include park entry tickets — each guest needs their own ticket to access the playground, train, and jumping blob. Add tickets at the gate or call ahead.
+          Pavilion rental does <strong>not</strong> include park entry. Every kid ages 3–12 needs an entry ticket — adults and kids under 3 enter free. Pick up tickets at the gate if you didn't add any here.
         </p>
       </div>`;
 

@@ -143,16 +143,8 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
     return () => clearTimeout(timer);
   }, [date, time, duration, pavilion.id]);
 
-  // ── On entering Extras: default child-entry tickets to match party size ──
-  useEffect(() => {
-    if (step !== "extras") return;
-    const n = Number(partySize);
-    if (!Number.isFinite(n) || n < 1) return;
-    setAddonQty((prev) => {
-      if (prev["child-entry-addon"] !== undefined) return prev;
-      return { ...prev, "child-entry-addon": n };
-    });
-  }, [step, partySize]);
+  // (Tickets are NOT auto-pre-filled from party size — only kids ages 3–12
+  // need entry tickets, so we leave the count at 0 for the guest to set.)
 
   // ── Initialize Square card when entering payment step (skip if free) ──
   useEffect(() => {
@@ -303,8 +295,8 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                 <p className="text-red-700 text-[10px] uppercase tracking-widest font-black mb-1">⚠ Important</p>
                 <p className="text-stone-700 text-sm leading-snug">
                   Pavilion rentals only cover the shaded space.{" "}
-                  <strong className="text-red-700">Park entry tickets are required for every guest</strong>{" "}
-                  — you can add them in the next steps and pay for everything together.
+                  <strong className="text-red-700">Park entry tickets are required for every kid ages 3–12.</strong>{" "}
+                  Adults and kids under 3 enter free. You can add tickets in the next steps and pay for everything together.
                 </p>
               </div>
 
@@ -449,7 +441,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                   onChange={(e) => setPartySize(e.target.value)} placeholder={`e.g. 20`}
                   className={inputCls()} />
                 <p className="text-stone-400 text-xs mt-1">
-                  Helps us prepare. We&apos;ll pre-fill park entry tickets for this many guests on the next step.
+                  Helps us prepare. On the next step you&apos;ll pick park entry tickets — only kids ages 3–12 need them, adults and kids under 3 enter free.
                 </p>
               </div>
 
@@ -474,11 +466,20 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
           {step === "extras" && (
             <div className="space-y-4">
               <div className="bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3">
-                <p className="text-red-700 text-[10px] uppercase tracking-widest font-black mb-1">⚠ Required for every guest</p>
+                <p className="text-red-700 text-[10px] uppercase tracking-widest font-black mb-1">⚠ Tickets required for kids 3–12</p>
                 <p className="text-stone-700 text-sm leading-snug">
-                  Park entry is <strong className="text-red-700">not</strong> included in the pavilion rental. Add a ticket
-                  for each child below — we&apos;ve pre-filled the count from your guest size.
+                  Park entry is <strong className="text-red-700">not</strong> included in the pavilion rental.{" "}
+                  Set the ticket count to the number of kids ages 3–12 in your party. Adults and kids under 3 enter free.
                 </p>
+                {partySize && (
+                  <button
+                    type="button"
+                    onClick={() => setAddonQty((p) => ({ ...p, "child-entry-addon": Number(partySize) }))}
+                    className="mt-2 text-xs font-black text-red-700 hover:text-red-800 underline underline-offset-2"
+                  >
+                    Match my guest count ({partySize})
+                  </button>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -493,7 +494,7 @@ export default function ReservationModal({ pavilion, onClose }: Props) {
                       <div className="flex-1 min-w-0">
                         <p className="text-stone-800 font-black text-sm leading-tight">
                           {a.name}
-                          {isRequired && <span className="ml-2 text-[10px] font-black text-red-600 uppercase tracking-wider">Required</span>}
+                          {isRequired && <span className="ml-2 text-[10px] font-black text-red-600 uppercase tracking-wider">Ages 3–12</span>}
                         </p>
                         <p className="text-stone-500 text-xs mt-0.5 line-clamp-2">{a.description}</p>
                         <p className="text-teal-700 font-black text-sm mt-1">${(a.price / 100).toFixed(2)}{a.id !== "child-entry-addon" ? "" : " each"}</p>
