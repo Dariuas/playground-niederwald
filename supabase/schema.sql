@@ -33,6 +33,12 @@ ALTER TABLE pavilion_bookings ADD COLUMN IF NOT EXISTS square_refund_id TEXT;
 ALTER TABLE pavilion_bookings ADD COLUMN IF NOT EXISTS party_size INTEGER;
 ALTER TABLE pavilion_bookings ADD COLUMN IF NOT EXISTS addons JSONB;
 
+-- Migration: relax total_cents check from > 0 to >= 0 so free-day bookings (Mon–Wed)
+-- can be inserted. CREATE TABLE IF NOT EXISTS does not update existing constraints,
+-- so this drop+add is required when upgrading an older database.
+ALTER TABLE pavilion_bookings DROP CONSTRAINT IF EXISTS pavilion_bookings_total_cents_check;
+ALTER TABLE pavilion_bookings ADD CONSTRAINT pavilion_bookings_total_cents_check CHECK (total_cents >= 0);
+
 -- Reconciliation log: charges that succeeded in Square but failed to insert
 -- a booking row. Surface these in admin so staff can manually create the
 -- booking or refund the customer.

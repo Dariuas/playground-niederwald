@@ -222,8 +222,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (dbError) {
-    // Payment succeeded but DB write failed — record for manual reconciliation
-    console.error("DB write failed after successful payment:", {
+    console.error("DB write failed:", {
       reservationId,
       squarePaymentId,
       pavilionId,
@@ -253,7 +252,17 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.error("failed_reservations insert threw:", err);
     }
-    // Still return success — payment went through and we have a Square ID for recovery
+
+    // For free bookings, there's no Square charge to protect, so surface
+    // the failure so the customer can retry. For paid bookings, swallow
+    // the error and return success — staff will reconcile from the
+    // failed_reservations row using the Square payment ID.
+    if (!squarePaymentId) {
+      return NextResponse.json(
+        { error: "Could not save your reservation. Please try again." },
+        { status: 500 }
+      );
+    }
   }
 
   // ── Send confirmation emails ──────────────────────────────────────
