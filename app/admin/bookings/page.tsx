@@ -158,6 +158,75 @@ function RefundModal({
 }
 
 // ─────────────────────────────────────────────────────────────
+// Cancel confirmation modal — same typed-guard pattern as RefundModal
+// ─────────────────────────────────────────────────────────────
+function CancelModal({
+  booking,
+  onClose,
+  onConfirm,
+  busy,
+}: {
+  booking: Booking;
+  onClose: () => void;
+  onConfirm: () => void;
+  busy: boolean;
+}) {
+  const [confirmText, setConfirmText] = useState("");
+  const canConfirm = confirmText.trim().toUpperCase() === "CANCEL";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <h3 className="text-xl font-black text-stone-800 mb-1">Confirm Cancellation</h3>
+        <p className="text-stone-500 text-sm mb-4">
+          This marks the booking as cancelled. <strong>No refund is issued</strong> — use the Refund button if money needs to come back.
+        </p>
+
+        <div className="bg-stone-50 border-2 border-stone-200 rounded-xl p-4 mb-4 text-sm space-y-1">
+          <div className="flex justify-between">
+            <span className="text-stone-500">Reservation</span>
+            <span className="font-mono font-bold text-teal-700">{booking.reservation_id}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-stone-500">Guest</span>
+            <span className="text-stone-800 font-semibold">{booking.guest_name}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-stone-500">Date</span>
+            <span className="text-stone-800 font-semibold">{booking.date} · {formatTime(booking.start_time)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-stone-500">Amount</span>
+            <span className="text-stone-700 font-bold">{formatCents(booking.total_cents)}</span>
+          </div>
+        </div>
+
+        <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
+          Type <span className="font-black text-red-600">CANCEL</span> to confirm
+        </label>
+        <input
+          type="text" value={confirmText} onChange={(e) => setConfirmText(e.target.value)}
+          autoFocus
+          placeholder="CANCEL"
+          className="w-full border-2 border-stone-200 rounded-xl px-3 py-2 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-red-400"
+        />
+
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={busy}
+            className="flex-1 border-2 border-stone-200 text-stone-600 hover:border-stone-300 font-bold py-2.5 rounded-xl text-sm transition-colors">
+            Keep Booking
+          </button>
+          <button onClick={onConfirm} disabled={!canConfirm || busy}
+            className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-2.5 rounded-xl text-sm transition-colors">
+            {busy ? "Cancelling…" : "Confirm Cancel"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // Add-booking panel
 // ─────────────────────────────────────────────────────────────
 function AddBookingPanel({ onAdded }: { onAdded: () => void }) {
@@ -430,6 +499,8 @@ export default function AdminBookingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [refundTarget, setRefundTarget] = useState<Booking | null>(null);
   const [refundBusy, setRefundBusy] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -468,22 +539,27 @@ export default function AdminBookingsPage() {
 
   useEffect(() => { fetchCalendarBookings(); }, [fetchCalendarBookings]);
 
-  const openCancel = async (id: string) => {
-    if (!window.confirm("Mark this booking as cancelled? (No refund will be issued.)")) return;
-    setActionLoading(id);
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
+    setCancelBusy(true);
     try {
-      const res = await fetch(`/api/admin/bookings/${id}`, {
+      const res = await fetch(`/api/admin/bookings/${cancelTarget.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "cancelled" }),
       });
-      if (!res.ok) throw new Error("Update failed.");
-      await fetchBookings();
-      await fetchCalendarBookings();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error ?? "Update failed.");
+      } else {
+        setCancelTarget(null);
+        await fetchBookings();
+        await fetchCalendarBookings();
+      }
     } catch (e) {
       alert(e instanceof Error ? e.message : "Update failed.");
     } finally {
-      setActionLoading(null);
+      setCancelBusy(false);
     }
   };
 
@@ -626,9 +702,9 @@ export default function AdminBookingsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {b.status === "confirmed" ? (
                         <div className="flex gap-2">
-                          <button onClick={() => openCancel(b.id)} disabled={actionLoading === b.id}
+                          <button onClick={() => setCancelTarget(b)} disabled={actionLoading === b.id}
                             className="px-3 py-1 text-xs font-bold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50">
-                            Cancel
+                            Cancel…
                           </button>
                           <button onClick={() => setRefundTarget(b)} disabled={actionLoading === b.id}
                             className="px-3 py-1 text-xs font-bold rounded-lg bg-stone-100 text-stone-500 hover:bg-stone-200 transition-colors disabled:opacity-50">
@@ -653,6 +729,15 @@ export default function AdminBookingsPage() {
           onClose={() => !refundBusy && setRefundTarget(null)}
           onConfirm={confirmRefund}
           busy={refundBusy}
+        />
+      )}
+
+      {cancelTarget && (
+        <CancelModal
+          booking={cancelTarget}
+          onClose={() => !cancelBusy && setCancelTarget(null)}
+          onConfirm={confirmCancel}
+          busy={cancelBusy}
         />
       )}
     </div>
